@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Moment of Force Lab — Balance the Rod</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="script.js" defer></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 48 44" aria-hidden="true">
+      <line class="mark-rod" x1="4" y1="17" x2="44" y2="27"/>
+      <polygon class="mark-wedge" points="24,22 13,40 35,40"/>
+      <rect class="mark-mass" x="6" y="18" width="9" height="9" rx="1.5"/>
+      <line class="mark-ground" x1="6" y1="41.5" x2="42" y2="41.5"/>
+    </svg>
+    <div class="brand-text">
+      <p class="eyebrow">Turning forces · practical</p>
+      <h1>Moment of Force Lab</h1>
+      <p class="tagline">Move the fulcrum, hang the masses, and find the rule that balances the rod</p>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- ===================== THE APPARATUS ===================== -->
+  <section class="card stage-card">
+    <div class="stage-head">
+      <div class="pill" id="statusPill">Balanced</div>
+      <div class="net-readout">
+        <span>Out of balance by</span>
+        <strong id="netVal">0.0 N·m</strong>
+      </div>
+    </div>
+
+    <div class="scene-wrap">
+      <svg id="scene" viewBox="0 0 900 515" role="img"
+           aria-label="A rod resting on a triangular fulcrum with masses hanging from it">
+        <defs>
+          <linearGradient id="rodGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="#dbe1e9"/>
+            <stop offset="45%" stop-color="#9aa6b6"/>
+            <stop offset="55%" stop-color="#7f8b9c"/>
+            <stop offset="100%" stop-color="#dbe1e9"/>
+          </linearGradient>
+          <linearGradient id="fulcrumGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#3a5a93"/>
+            <stop offset="55%"  stop-color="#2e4a7d"/>
+            <stop offset="100%" stop-color="#233c69"/>
+          </linearGradient>
+          <!-- graph paper; JS aligns the major lines to the rod's metre marks -->
+          <pattern id="grid" patternUnits="userSpaceOnUse">
+            <path id="gridMinor" class="grid-minor" fill="none"/>
+            <path id="gridMajor" class="grid-major" fill="none"/>
+          </pattern>
+          <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#141c26" flood-opacity="0.18"/>
+          </filter>
+        </defs>
+
+        <rect id="graph" x="0" y="0" width="100%" height="100%" fill="url(#grid)"/>
+        <g id="ground"></g>
+        <g id="fulcrumGroup" tabindex="0" role="slider" aria-label="Fulcrum position"></g>
+        <g id="rodGroup"></g>
+        <g id="overlay"></g>
+      </svg>
+    </div>
+
+    <p class="hint">
+      <span class="kbd">Drag</span> a hanging mass along the rod ·
+      <span class="kbd">Drag</span> the blue wedge to move the pivot ·
+      <span class="kbd">Tab</span> then <span class="kbd">← →</span> also works
+    </p>
+  </section>
+
+  <!-- ===================== THE WORKING OUT ===================== -->
+  <section class="card calc-card" id="calcCard">
+    <div class="mask-note" id="maskNote">Predict first — the working appears once you answer</div>
+    <div class="calc-inner">
+      <h2>Working out
+        <span class="sub">moment = force × perpendicular distance from the pivot</span>
+      </h2>
+
+      <div class="table-wrap">
+        <table id="calcTable">
+          <thead>
+            <tr>
+              <th>Object</th><th>Mass</th><th>Weight F = m g</th>
+              <th>Distance d</th><th>Turning effect</th><th>Moment F × d</th>
+            </tr>
+          </thead>
+          <tbody id="calcBody"></tbody>
+        </table>
+      </div>
+
+      <div class="sums">
+        <div class="sum acw">
+          <span class="sum-label">Total anticlockwise ↺</span>
+          <code class="expr" id="acwExpr">0</code>
+          <strong id="acwTotal">0 N·m</strong>
+        </div>
+        <div class="cmp" id="cmpSign">=</div>
+        <div class="sum cw">
+          <span class="sum-label">Total clockwise ↻</span>
+          <code class="expr" id="cwExpr">0</code>
+          <strong id="cwTotal">0 N·m</strong>
+        </div>
+      </div>
+      <p class="sums-note">Forces in newtons (N), distances in metres (m) measured from the pivot.</p>
+
+      <p class="verdict" id="verdict"></p>
+    </div>
+  </section>
+
+  <!-- ===================== CONTROLS ===================== -->
+  <aside class="side-col">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="explore" role="tab">Explore</button>
+      <button class="tab" data-tab="challenge" role="tab">Challenge</button>
+      <button class="tab" data-tab="learn" role="tab">Learn</button>
+    </div>
+
+    <!-- ---------- EXPLORE ---------- -->
+    <div class="card tabpanel active" id="tab-explore">
+
+      <section class="ctrl-block">
+        <div class="row-head"><label for="lengthInput">Length of the rod</label></div>
+        <div class="stepper">
+          <button type="button" class="step-btn" data-step="-1" tabindex="-1"
+                  aria-label="Shorter rod">−</button>
+          <span class="step-field">
+            <input type="number" id="lengthInput" inputmode="decimal"
+                   min="0.1" max="100" step="0.1" value="10">
+            <span class="unit" id="lengthUnit">metres</span>
+          </span>
+          <button type="button" class="step-btn" data-step="1" tabindex="-1"
+                  aria-label="Longer rod">+</button>
+        </div>
+        <div class="chips">
+          <button class="chip" data-len="1">1 m</button>
+          <button class="chip" data-len="2">2 m</button>
+          <button class="chip" data-len="5">5 m</button>
+          <button class="chip active" data-len="10">10 m</button>
+        </div>
+        <p class="micro">Type any length from 0.1 m to 100 m, or pick one. The rod is drawn the
+        same size whatever you choose — only its <strong>markings</strong> change. Every mass keeps
+        its distance from the pivot in proportion, so moments scale but a balanced rod stays balanced.</p>
+      </section>
+
+      <section class="ctrl-block">
+        <div class="row-head">
+          <label for="fulcrumInput">Fulcrum position</label>
+        </div>
+        <div class="stepper">
+          <button type="button" class="step-btn" data-step="-1" tabindex="-1"
+                  aria-label="Move pivot left">−</button>
+          <span class="step-field">
+            <input type="number" id="fulcrumInput" inputmode="decimal"
+                   min="0" max="10" step="0.25" value="5">
+            <span class="unit">m</span>
+          </span>
+          <button type="button" class="step-btn" data-step="1" tabindex="-1"
+                  aria-label="Move pivot right">+</button>
+        </div>
+        <input type="range" id="fulcrumRange" min="1" max="9" step="0.05" value="5">
+        <div class="range-legend"><span>left end</span><span>centre</span><span>right end</span></div>
+      </section>
+
+      <section class="ctrl-block">
+        <div class="row-head">
+          <span class="label">Masses on the rod</span>
+          <button class="btn tiny" id="addMass">+ Add mass</button>
+        </div>
+        <div id="massList" class="mass-list"></div>
+        <p class="micro">Type any mass from 0.1 kg to 1000 kg, and any position on the rod.
+        Switch a mass <strong>off</strong> to lift it clear without losing it — its moment stops
+        counting, but it keeps its place so you can switch it back on.</p>
+      </section>
+
+      <section class="ctrl-block">
+        <span class="label">Show on the diagram</span>
+        <div class="checks">
+          <label class="chk"><input type="checkbox" id="chkForces" checked><span>Force arrows</span></label>
+          <label class="chk"><input type="checkbox" id="chkDist" checked><span>Distances</span></label>
+          <label class="chk"><input type="checkbox" id="chkSnap" checked><span>Snap to <span id="snapOut">0.25</span> m</span></label>
+          <label class="chk"><input type="checkbox" id="chkRod"><span>Rod has weight</span></label>
+        </div>
+        <div class="sub-ctrl hidden" id="rodMassWrap">
+          <div class="row-head">
+            <label for="rodMassInput">Mass of the rod</label>
+          </div>
+          <div class="stepper">
+            <button type="button" class="step-btn" data-step="-1" tabindex="-1"
+                    aria-label="Lighter rod">−</button>
+            <span class="step-field">
+              <input type="number" id="rodMassInput" inputmode="decimal"
+                     min="0" max="1000" step="0.5" value="2">
+              <span class="unit">kg</span>
+            </span>
+            <button type="button" class="step-btn" data-step="1" tabindex="-1"
+                    aria-label="Heavier rod">+</button>
+          </div>
+          <input type="range" id="rodMassRange" min="0" max="10" step="0.5" value="2">
+          <p class="micro">The pivot cuts the rod in two. Each part gets the share of the mass
+          that matches its share of the length, and its weight acts at the middle of
+          <em>that part</em> — so the rod turns the beam <strong>both ways at once</strong>, and both
+          columns below show a real calculation.</p>
+        </div>
+      </section>
+
+      <section class="ctrl-block">
+        <div class="row-head"><span class="label" id="gravLabel">Gravity</span></div>
+        <div class="cselect" id="gravSelect">
+          <button type="button" class="cselect-trigger" id="gravTrigger"
+                  aria-haspopup="listbox" aria-expanded="false" aria-labelledby="gravLabel gravName">
+            <span class="cselect-text">
+              <span class="cselect-name" id="gravName">Earth</span>
+              <span class="cselect-sub">everyday gravity</span>
+            </span>
+            <span class="cselect-num" id="gravNum">9.8 N/kg</span>
+            <svg class="cselect-chev" viewBox="0 0 12 8" aria-hidden="true">
+              <path d="M1.5 1.75 6 6.25l4.5-4.5"/>
+            </svg>
+          </button>
+          <ul class="cselect-list" id="gravList" role="listbox" aria-labelledby="gravLabel" hidden>
+            <li role="option" tabindex="-1" data-value="9.8" data-name="Earth"
+                data-sub="everyday gravity" aria-selected="true">
+              <span class="cselect-text"><span class="cselect-name">Earth</span>
+                <span class="cselect-sub">everyday gravity</span></span>
+              <span class="cselect-num">9.8 N/kg</span>
+            </li>
+            <li role="option" tabindex="-1" data-value="10" data-name="School value"
+                data-sub="rounded, easier arithmetic" aria-selected="false">
+              <span class="cselect-text"><span class="cselect-name">School value</span>
+                <span class="cselect-sub">rounded, easier arithmetic</span></span>
+              <span class="cselect-num">10 N/kg</span>
+            </li>
+            <li role="option" tabindex="-1" data-value="1.6" data-name="Moon"
+                data-sub="about a sixth of Earth's" aria-selected="false">
+              <span class="cselect-text"><span class="cselect-name">Moon</span>
+                <span class="cselect-sub">about a sixth of Earth's</span></span>
+              <span class="cselect-num">1.6 N/kg</span>
+            </li>
+          </ul>
+        </div>
+        <p class="micro">Try the Moon: every moment shrinks, but a balanced rod <em>stays</em> balanced. Why?</p>
+      </section>
+
+      <section class="ctrl-block">
+        <span class="label">Ready-made set-ups</span>
+        <div class="presets">
+          <button class="btn preset" data-preset="equal">Equal masses, central pivot</button>
+          <button class="btn preset" data-preset="seesaw">Seesaw: heavy child, light child</button>
+          <button class="btn preset" data-preset="offcentre">Off-centre pivot</button>
+          <button class="btn preset" data-preset="crowbar">Crowbar: small force, big load</button>
+          <button class="btn preset" data-preset="three">Three masses puzzle</button>
+        </div>
+        <button class="btn ghost wide" id="resetBtn">Reset the lab</button>
+      </section>
+    </div>
+
+    <!-- ---------- CHALLENGE ---------- -->
+    <div class="card tabpanel" id="tab-challenge">
+      <div class="score-bar"><span>Score</span><strong id="scoreVal">0 / 0</strong></div>
+
+      <div class="task-box">
+        <h3 id="taskTitle">Ready?</h3>
+        <p id="taskText">Press <strong>New challenge</strong> and the lab will set up a problem for you.</p>
+      </div>
+
+      <div id="predictBtns" class="predict-btns hidden">
+        <button class="btn predict" data-pred="acw">Tips to the left ↺</button>
+        <button class="btn predict" data-pred="bal">Stays balanced</button>
+        <button class="btn predict" data-pred="cw">Tips to the right ↻</button>
+      </div>
+
+      <div class="task-actions">
+        <button class="btn primary" id="newTask">New challenge</button>
+        <button class="btn" id="checkTask" disabled>Check my answer</button>
+        <button class="btn ghost" id="showAnswer" disabled>Show the answer</button>
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <!-- ---------- LEARN ---------- -->
+    <div class="card tabpanel" id="tab-learn">
+      <h2 class="learn-title">The turning effect of a force</h2>
+
+      <p>Push a door near its hinge and it hardly moves. Push just as hard at the handle and it swings open.
+      The force is the same — what changed is the <strong>distance from the pivot</strong>. That turning effect
+      is called the <strong>moment of a force</strong>.</p>
+
+      <div class="formula">
+        moment = force × perpendicular distance from the pivot<br>
+        <span class="fsym">M = F × d</span>
+        <span class="funit">newton (N) × metre (m) = newton metre (N·m)</span>
+      </div>
+
+      <h3>The pivot</h3>
+      <p>The fulcrum is the point the rod turns about, and <em>every distance is measured from it</em>.
+      Slide the pivot in the diagram: nothing else moves, yet every distance — and so every moment — changes.</p>
+
+      <h3>The principle of moments</h3>
+      <p>A rod that balances obeys one neat rule:</p>
+      <div class="rule">total clockwise moments = total anticlockwise moments</div>
+      <p>So a small weight far from the pivot balances a large weight close to it. That is exactly why a small
+      child can seesaw with an adult — the child just sits further back.</p>
+
+      <h3>A rod that weighs something</h3>
+      <p>A rod is not a point — it is spread out, so every centimetre of it pulls down. Put the pivot
+      off-centre and there is rod on <em>both</em> sides of it, each side turning the beam its own way.</p>
+      <p>The neat way to handle that is to cut the rod at the pivot and treat each piece as one mass:</p>
+      <div class="example">
+        <p class="step">each piece's mass = rod mass × (its length ÷ whole length)</p>
+        <p class="step">and that weight acts at the <strong>middle of that piece</strong></p>
+      </div>
+      <p>A 100 kg, 100 m rod on a pivot at 80 m becomes 80 kg acting at 40 m (so 40 m to the left of
+      the pivot) and 20 kg acting at 90 m (10 m to the right) — an anticlockwise moment and a
+      clockwise one, not a single lopsided force.</p>
+      <p>Work out the difference and you get exactly the same answer as putting the whole weight at
+      the rod's centre. That is <em>why</em> the centre-of-mass shortcut works — but the two pieces
+      show you where the answer comes from. Tick <strong>Rod has weight</strong> and slide the pivot
+      to watch the two moments trade places.</p>
+
+      <h3>Worked example</h3>
+      <div class="example">
+        <p>A 4 kg mass hangs 1.5 m to the <em>left</em> of the pivot (take g = 10 N/kg). Where must a 3 kg mass
+        hang on the right to balance the rod?</p>
+        <p class="step">anticlockwise = (4 × 10) × 1.5 = <strong>60 N·m</strong></p>
+        <p class="step">for balance, clockwise must also be 60 N·m</p>
+        <p class="step">(3 × 10) × d = 60 → 30 d = 60 → d = <strong>2.0 m</strong></p>
+        <p>The lighter mass sits further out. Set it up in the lab and check.</p>
+      </div>
+
+      <h3>Where you meet it</h3>
+      <ul class="examples">
+        <li><strong>Seesaw</strong> — pivot in the middle, riders change their distance.</li>
+        <li><strong>Spanner</strong> — a longer handle gives a bigger moment for the same push.</li>
+        <li><strong>Crowbar</strong> — pivot close to the load, so a small effort lifts a lot.</li>
+        <li><strong>Wheelbarrow</strong> — the wheel is the pivot; the load rides near it.</li>
+        <li><strong>Scissors and pliers</strong> — two levers sharing one pivot.</li>
+        <li><strong>Door handle</strong> — set as far from the hinge as possible, never beside it.</li>
+      </ul>
+
+      <h3>Watch out for these</h3>
+      <ul class="mistakes">
+        <li>Measuring from the <em>end of the rod</em> instead of from the pivot.</li>
+        <li>Forgetting to turn mass into weight: <strong>F = m g</strong>, not F = m.</li>
+        <li>Mixing centimetres and metres — pick one unit and stay with it.</li>
+        <li>Ignoring the rod's own weight when the pivot is <em>not</em> at its centre.</li>
+        <li>Thinking the overhanging end of a rod does nothing. Every part of a rod has weight,
+        and the part beyond the pivot turns the beam the other way.</li>
+      </ul>
+
+      <h3>Investigate</h3>
+      <ol class="investigate">
+        <li>Balance two equal masses on a central pivot, then move the pivot 1 m right. Which way does it tip?</li>
+        <li>Balance 5 kg at 1 m against 1 kg. How far out must the 1 kg go?</li>
+        <li>Switch gravity to the Moon. Does a balanced rod become unbalanced? Explain why not.</li>
+        <li>Switch one mass off, rebalance, then switch it back on. What has to change?</li>
+        <li>Balance the rod, then change its length from 10 m to 1 m. Every moment shrinks to a tenth —
+        so why is the rod still balanced?</li>
+        <li>Turn on the rod's weight and put the pivot at 3 m. What must change to rebalance it?</li>
+        <li>With only the rod's weight on, slide the pivot to the exact centre. Why do the two parts
+        cancel? Now slide it slightly right — which part's moment grows, and which shrinks?</li>
+      </ol>
+    </div>
+  </aside>
+</main>
+
+<footer class="foot">Drag · predict · then check the working</footer>
+
+</body>
+</html>
