@@ -369,6 +369,23 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   letter-spacing:.05em;
 }
 
+/* ---------- segmented control: two mutually exclusive worlds ---------- */
+.segmented{
+  display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;
+  border:1px solid var(--rule);border-radius:8px;background:var(--surface-sunk);
+}
+.seg{
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:8px 6px;border:none;border-radius:6px;cursor:pointer;
+  background:transparent;color:var(--ink-faint);font:inherit;transition:.15s;
+}
+.seg:hover{color:var(--ink)}
+.seg.active{background:var(--surface);color:var(--draft);box-shadow:0 1px 2px rgba(20,28,38,.08)}
+.seg:focus-visible{outline:2px solid var(--draft);outline-offset:1px}
+.seg-name{font-family:var(--f-mono);font-size:12.5px;font-weight:600;letter-spacing:.08em}
+.seg-sub{font-family:var(--f-mono);font-size:10px;letter-spacing:.03em;opacity:.85}
+.seg.active .seg-sub{color:var(--ink-soft)}
+
 .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
 .chip{
   font-family:var(--f-mono);font-size:11px;padding:4px 10px;border-radius:999px;cursor:pointer;
@@ -657,6 +674,8 @@ input[type=range]::-moz-range-thumb{
   .btn{padding:11px 14px}
   .toggle{padding:7px 11px;min-width:52px}
   .chip{padding:8px 14px;font-size:12px}
+  .seg{padding:11px 6px}
+  .seg-name{font-size:13.5px}
   /* 16px keeps iOS from zooming the page when a field takes focus */
   .step-field input{font-size:16px}
   .stepper{height:48px}

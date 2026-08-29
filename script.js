@@ -29,17 +29,30 @@
   };
   let P = PROFILES.wide;
 
-  /* Both of these are moments, so they scale with the rod: a 1 m rod tilts by the
-     same amount as a 10 m one for the same *proportional* imbalance. */
-  const tiltScale = () => 12 * state.rodLength / 10;
-  const balancedTol = () => 0.05 * state.rodLength / 10;
+  /* The simulation is unit-agnostic: moment = (mass × g) × distance comes out the
+     same in any consistent set, so switching systems only rescales the numbers and
+     relabels them.  g·cm/s² is a dyne; dyne × cm is a dyne·cm. */
+  const UNITS = {
+    mks: { name: 'MKS', len: 'm', mass: 'kg', force: 'N', moment: 'N·m', field: 'N/kg',
+           lenLong: 'metres (m)', forceLong: 'newtons (N)', lenWord: 'metres',
+           L: 1, M: 1, g: [9.8, 10, 1.6] },
+    cgs: { name: 'CGS', len: 'cm', mass: 'g', force: 'dyne', moment: 'dyne·cm',
+           field: 'dyne/g', lenLong: 'centimetres (cm)', forceLong: 'dynes',
+           lenWord: 'centimetres', L: 100, M: 1000, g: [980, 1000, 160] }
+  };
+  const U = () => UNITS[state.units] || UNITS.mks;
+  const LEN_MIN = () => 0.1 * U().L, LEN_MAX = () => 100 * U().L;
+  const MASS_MIN = () => 0.1 * U().M, MASS_MAX = () => 1000 * U().M;
+  /** Kill the float dust a x100 conversion leaves behind. */
+  const tidy = (v) => Number(v.toPrecision(12));
   const MAX_MASSES = 6;
   const PALETTE = ['#c8452e', '#3272be', '#b4771a', '#7a55cc',
                    '#128a96', '#b94a85', '#63862a', '#c4631f'];
 
   /* ---------- state ---------- */
   const state = {
-    rodLength: 10,     // metres from end to end; changes the markings, not the drawing
+    units: 'mks',
+    rodLength: 10,     // in the current length unit; changes the markings, not the drawing
     fulcrum: 5,
     g: 9.8,
     masses: [],
@@ -48,12 +61,13 @@
     snap: true,
     useRodWeight: false,
     rodMass: 2,
+    savedTab: 'explore',
     mode: 'explore',   // 'explore' | 'challenge'
     frozen: false,     // rod held level while a prediction is pending
     nextId: 1
   };
 
-  let angle = 0, vel = 0, dirty = true;
+  let angle = 0, omega = 0, dirty = true;   // degrees, and rad/s
   let dragging = null;
   let exploreSnapshot = null;
 
@@ -64,7 +78,21 @@
 
   /* ---------- helpers ---------- */
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-  const fmt = (n, d) => (Math.abs(n) < 5e-3 ? 0 : n).toFixed(d === undefined ? 1 : d);
+  const SUPER = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'};
+  /** 588000000 -> "5.88 × 10⁸" — CGS moments are far too big to write out. */
+  function standardForm(v) {
+    const e = Math.floor(Math.log10(Math.abs(v)));
+    const m = v / Math.pow(10, e);
+    return m.toFixed(2).replace(/\.?0+$/, '') + ' × 10' +
+           String(e).split('').map((c) => SUPER[c] || c).join('');
+  }
+  function fmt(n, d) {
+    if (!isFinite(n) || Math.abs(n) < 5e-3) return '0';
+    if (d !== undefined) return n.toFixed(d);
+    const a = Math.abs(n);
+    if (a >= 1e5) return standardForm(n);
+    return a >= 1000 ? n.toFixed(0) : n.toFixed(1);
+  }
 
   const RL = () => state.rodLength;                    // rod length, in metres
   const ppm = () => P.DIV * DIVS / state.rodLength;    // drawing units per metre
@@ -161,7 +189,11 @@
   function getTotals(items) {
     let cw = 0, acw = 0;
     items.forEach((it) => { if (it.dir > 0) cw += it.moment; else if (it.dir < 0) acw += it.moment; });
-    return { cw: cw, acw: acw, net: cw - acw, balanced: Math.abs(cw - acw) < balancedTol() };
+    const net = cw - acw;
+    /* relative, so it means the same in N·m as in dyne·cm — it forgives only the
+       float dust of adding a few products together */
+    return { cw: cw, acw: acw, net: net,
+             balanced: Math.abs(net) <= 1e-9 * Math.max(cw + acw, 1) };
   }
 
   /** The rod may only swing until its long arm reaches the stand. */
@@ -171,11 +203,45 @@
     return Math.min(P.MAX_TILT, geometric);
   }
 
-  function targetAngle() {
-    if (state.frozen) return 0;
-    const net = getTotals(getItems()).net;
-    if (Math.abs(net) < balancedTol()) return 0;
-    return maxTilt() * Math.tanh(net / tiltScale());   // + tips clockwise
+  /* ---------- how the beam actually moves ----------
+     A hanging weight always pulls straight down, so as the beam tilts its lever arm
+     becomes d·cos(θ). Every term shrinks by the same factor, so an unbalanced beam
+     has no level of its own — it keeps going until it meets the stand.
+     What holds it back is the pivot sitting slightly ABOVE the beam's centre of
+     gravity, exactly as on a real beam balance. That adds W·h·sin(θ), and the beam
+     comes to rest where
+         (net moment)·cos θ = W·h·sin θ    →    tan θ = net moment / (W·h)
+     A hair out of balance leans a little; genuinely out of balance goes right over.
+     Note what that ratio does NOT contain: the size of the masses. Halve every mass
+     and W halves too, so the lean is unchanged — a gram leans like a kilogram, which
+     is exactly how a real bench behaves.  h is the beam's sensitivity. */
+  const PIVOT_RISE = 0.045;      // pivot above the beam, as a fraction of its length
+  const DEG = Math.PI / 180;
+  const DAMPING = 0.65;          // fraction of critical: settles with barely an overshoot
+  /* A beam this sensitive really does swing with a period of several seconds — real
+     balances are slow for exactly this reason. That is tedious to watch, so the clock
+     runs faster by reducing the effective inertia. Every angle it settles at is
+     untouched (equilibrium is where the torque vanishes, and inertia is not in that
+     equation); only the time it takes to get there is compressed. */
+  const SPEED = 3;
+
+  function beam() {
+    let torque = 0, weight = 0, inertia = 0;
+    getItems().forEach(function (it) {
+      if (!it.active) return;
+      torque += it.force * it.dSigned;        // + turns it clockwise
+      weight += it.force;
+    });
+    state.masses.forEach(function (m) {
+      if (m.enabled === false) return;
+      const d = m.x - state.fulcrum;
+      inertia += m.m * d * d;                 // a hanging mass is a point mass
+    });
+    if (state.useRodWeight && state.rodMass > 0) {
+      const a = RL() / 2 - state.fulcrum;     // pivot to the rod's own centre
+      inertia += state.rodMass * (RL() * RL() / 12 + a * a);    // parallel axis
+    }
+    return { torque: torque, weight: weight, inertia: inertia, h: PIVOT_RISE * RL() };
   }
 
   /* ============================================================
@@ -209,7 +275,7 @@
     groundG.textContent = '';
     groundG.appendChild(el('text', {
       class: 'scene-caption', x: P.W / 2, y: P.capY, 'text-anchor': 'middle'
-    }, 'Rod length ' + RL() + ' m — every distance that counts is measured from the pivot.'));
+    }, 'Rod length ' + RL() + ' ' + U().len + ' — every distance that counts is measured from the pivot.'));
 
     /* the rod: drawn once, then only rotated */
     rodGroup.textContent = '';
@@ -278,7 +344,7 @@
     }));
     fulcrumGroup.appendChild(el('text', {
       class: 'pivot-label', x: px, y: base + 32, 'text-anchor': 'middle'
-    }, 'PIVOT ' + state.fulcrum.toFixed(posDp()) + ' m'));
+    }, 'PIVOT ' + state.fulcrum.toFixed(posDp()) + ' ' + U().len));
     fulcrumGroup.classList.toggle('locked', state.mode === 'challenge');
   }
 
@@ -340,7 +406,7 @@
                '<polygon class="reaction-head" points="' + px + ',' + yHead + ' ' + (px - 5) + ',' +
                (yHead + 8.5) + ' ' + (px + 5) + ',' + (yHead + 8.5) + '"/>' +
                '<text class="reaction-label arrow-label" x="' + (px + 9) + '" y="' + (yTail - 18) +
-               '">R = ' + fmt(totalW) + ' N</text></g>';
+               '">R = ' + fmt(totalW) + ' ' + U().force + '</text></g>';
       }
     }
 
@@ -356,7 +422,7 @@
 
       svg += '<g class="mass-grp' + (it.locked ? ' locked' : '') + (it.active ? '' : ' off') +
              '" data-mass-id="' + it.id + '" tabindex="0" role="button" aria-label="' + it.m +
-             ' kilogram mass at ' + it.x.toFixed(posDp()) + ' metres' + (it.active ? '' : ', switched off') + '">';
+             ' ' + U().mass + ' mass at ' + it.x.toFixed(posDp()) + ' ' + U().lenWord + (it.active ? '' : ', switched off') + '">';
       /* generous invisible target so a fingertip can grab it */
       svg += '<rect class="hit" x="' + (cx - hitW / 2) + '" y="' + (anchor[1] - 6) + '" width="' + hitW +
              '" height="' + (top + size + 16 - anchor[1]) + '" fill="none" pointer-events="all"/>';
@@ -370,11 +436,11 @@
              '" text-anchor="middle" font-size="' + fs.toFixed(1) +
              '" font-weight="500" pointer-events="none">' + it.m + '</text>';
       svg += '<text class="mass-cap" x="' + cx + '" y="' + (top + size + 13) +
-             '" text-anchor="middle" pointer-events="none">' + it.m + ' kg' +
+             '" text-anchor="middle" pointer-events="none">' + kgOf(it.m) + ' ' + U().mass +
              (it.active ? '' : ' · off') + '</text>';
       if (state.showForces && it.active) {
         svg += downArrow(cx, top + size + 18, Math.min(P.arrowMax, 16 + it.force * P.arrowK),
-                         { color: it.color }, fmt(it.force) + ' N');
+                         { color: it.color }, fmt(it.force) + ' ' + U().force);
       }
       svg += '</g>';
     });
@@ -392,7 +458,7 @@
             '<circle class="rod-cog" cx="' + p[0] + '" cy="' + p[1] + '" r="5.5" stroke-width="2"/>' +
             '<circle class="rod-cog-dot" cx="' + p[0] + '" cy="' + p[1] + '" r="1.8"/>';
     if (state.showForces) {
-      s += downArrow(p[0], p[1] + 10, len, { cls: 'rodw' }, fmt(it.force) + ' N');
+      s += downArrow(p[0], p[1] + 10, len, { cls: 'rodw' }, fmt(it.force) + ' ' + U().force);
     }
     s += '<text class="rod-cog-label" x="' + p[0] + '" y="' +
          (p[1] + 10 + (state.showForces ? len : 0) + 14) + '" text-anchor="middle">' +
@@ -421,14 +487,14 @@
                                : '<span class="dir-tag none">on the pivot</span>';
         const col = it.dir > 0 ? 'var(--cw)' : it.dir < 0 ? 'var(--acw)' : 'var(--ink-faint)';
         const moment = it.active
-          ? '<span class="calc-exp">' + term(it) + ' =</span> <b>' + fmt(it.moment) + ' N·m</b>'
+          ? '<span class="calc-exp">' + term(it) + ' =</span> <b>' + fmt(it.moment) + ' ' + U().moment + '</b>'
           : '<span class="calc-exp">counts as 0</span>';
-        const name = it.isRod ? it.label : kgOf(it.m) + ' kg mass';
+        const name = it.isRod ? it.label : kgOf(it.m) + ' ' + U().mass + ' mass';
         return '<tr' + (it.active ? '' : ' class="idle"') + '>' +
           '<td class="obj"><span class="swatch" style="background:' + it.color + '"></span>' + name + '</td>' +
-          '<td data-label="Mass">' + kgOf(it.m) + ' kg</td>' +
-          '<td data-label="Weight F = m g">' + fmt(it.force) + ' N</td>' +
-          '<td data-label="Distance d">' + it.d.toFixed(posDp()) + ' m</td>' +
+          '<td data-label="Mass">' + kgOf(it.m) + ' ' + U().mass + '</td>' +
+          '<td data-label="Weight F = m g">' + fmt(it.force) + ' ' + U().force + '</td>' +
+          '<td data-label="Distance d">' + it.d.toFixed(posDp()) + ' ' + U().len + '</td>' +
           '<td data-label="Turning effect">' + tag + '</td>' +
           '<td class="moment" data-label="Moment F × d" style="color:' + col + '">' + moment + '</td></tr>';
       }).join('');
@@ -439,10 +505,12 @@
     const cwTerms  = items.filter((it) => it.dir > 0).map(term);
     $('acwExpr').textContent = acwTerms.length ? acwTerms.join('  +  ') : 'nothing turning this way';
     $('cwExpr').textContent  = cwTerms.length  ? cwTerms.join('  +  ')  : 'nothing turning this way';
-    $('acwTotal').textContent = '= ' + fmt(t.acw) + ' N·m';
-    $('cwTotal').textContent  = '= ' + fmt(t.cw) + ' N·m';
+    $('acwTotal').textContent = '= ' + fmt(t.acw) + ' ' + U().moment;
+    $('cwTotal').textContent  = '= ' + fmt(t.cw) + ' ' + U().moment;
     $('cmpSign').textContent  = t.balanced ? '=' : (t.cw > t.acw ? '<' : '>');
-    $('netVal').textContent   = fmt(Math.abs(t.net)) + ' N·m';
+    $('netVal').textContent   = fmt(Math.abs(t.net)) + ' ' + U().moment;
+    $('sumsNote').textContent = 'Forces in ' + U().forceLong + ', distances in ' +
+      U().lenLong + ' measured from the pivot.';
 
     const pill = $('statusPill'), verdict = $('verdict');
     pill.classList.remove('cw', 'acw', 'wait');
@@ -457,18 +525,18 @@
       verdict.classList.add('ok');
       verdict.innerHTML = live
         ? 'The rod is in <strong>equilibrium</strong>: total anticlockwise = total clockwise = ' +
-          fmt(t.cw) + ' N·m.'
+          fmt(t.cw) + ' ' + U().moment + '.'
         : 'Hang a mass on the rod, or switch one back on, and watch what happens.';
     } else if (t.net > 0) {
       pill.classList.add('cw');
       pill.textContent = 'Tipping right ↻';
       verdict.innerHTML = 'Clockwise wins by <strong>' + fmt(t.net) +
-        ' N·m</strong>, so the right-hand side goes down. Move a mass, switch one off, or slide the pivot right.';
+        ' ' + U().moment + '</strong>, so the right-hand side goes down. Move a mass, switch one off, or slide the pivot right.';
     } else {
       pill.classList.add('acw');
       pill.textContent = 'Tipping left ↺';
       verdict.innerHTML = 'Anticlockwise wins by <strong>' + fmt(-t.net) +
-        ' N·m</strong>, so the left-hand side goes down. Move a mass, switch one off, or slide the pivot left.';
+        ' ' + U().moment + '</strong>, so the left-hand side goes down. Move a mass, switch one off, or slide the pivot left.';
     }
     $('calcCard').classList.toggle('masked', state.frozen);
   }
@@ -521,9 +589,10 @@
             '<button class="del" data-del="' + m.id + '" title="Remove this mass">✕</button></span>'
           : '') +
         '<div class="fields">' +
-          stepper({ num: 'm', id: m.id, min: 0.1, max: 1000, step: 0.5, unit: 'kg',
+          stepper({ num: 'm', id: m.id, min: MASS_MIN(), max: MASS_MAX(),
+                    step: 0.5 * U().M, unit: U().mass,
                     less: 'Lighter', more: 'Heavier' }) +
-          stepper({ num: 'x', id: m.id, min: 0, max: RL(), step: snapStep(), unit: 'm',
+          stepper({ num: 'x', id: m.id, min: 0, max: RL(), step: snapStep(), unit: U().len,
                     less: 'Move left', more: 'Move right' }) +
         '</div></div>';
     }).join('');
@@ -540,12 +609,13 @@
       const mn = row.querySelector('[data-num="m"]');
       const xn = row.querySelector('[data-num="x"]');
       if (xn) { xn.max = RL(); xn.step = snapStep(); }
-      if (mn) { mn.step = m.m >= 50 ? 5 : 0.5; }
+      if (mn) { mn.min = MASS_MIN(); mn.max = MASS_MAX();
+                 mn.step = (m.m >= 50 * U().M ? 5 : 0.5) * U().M; }
       setVal(mn, m.m);
       setVal(xn, m.x.toFixed(posDp()));
 
       const w = row.querySelector('.newtons');
-      if (w) w.textContent = '= ' + fmt(m.m * state.g) + ' N';
+      if (w) w.textContent = '= ' + fmt(m.m * state.g) + ' ' + U().force;
       const tg = row.querySelector('[data-toggle]');
       if (tg) {
         tg.textContent = on ? 'On' : 'Off';
@@ -557,21 +627,42 @@
     });
   }
 
+  let hintUnits = '';
   function syncControls() {
     const fr = $('fulcrumRange'), fn = $('fulcrumInput');
     fr.min = 0; fr.max = RL(); fr.step = fineStep();                  /* bounds before value */
     setVal(fr, state.fulcrum);
     fn.min = 0; fn.max = RL(); fn.step = snapStep();
     setVal(fn, state.fulcrum.toFixed(posDp()));
-    $('snapOut').textContent = snapStep().toFixed(posDp());
-    $('lengthUnit').textContent = RL() === 1 ? 'metre' : 'metres';
+    $('snapOut').textContent = snapStep().toFixed(posDp()) + ' ' + U().len;
+    $('lengthUnit').textContent = U().lenWord;
+    $('fulcrumUnit').textContent = U().len;
+    $('rodMassUnit').textContent = U().mass;
+    $('formulaUnit').textContent = U().name === 'MKS'
+      ? 'newton (N) × metre (m) = newton metre (N·m)'
+      : 'dyne × centimetre (cm) = dyne centimetre (dyne·cm)';
+    if (hintUnits !== state.units) {                /* innerHTML is too costly per frame */
+      hintUnits = state.units;
+      $('massHint').innerHTML = 'Type any mass from ' + kgOf(MASS_MIN()) + ' to ' +
+        kgOf(MASS_MAX()) + ' ' + U().mass + ', and any position on the rod. ' +
+        'Switch a mass <strong>off</strong> to lift it clear without losing it — its moment ' +
+        'stops counting, but it keeps its place so you can switch it back on.';
+    }
     const li = $('lengthInput');
-    li.step = RL() >= 20 ? 1 : (RL() >= 5 ? 0.5 : 0.1);   /* stepping stays proportional */
+    li.min = LEN_MIN(); li.max = LEN_MAX();
+    li.step = (RL() >= 20 * U().L ? 1 : (RL() >= 5 * U().L ? 0.5 : 0.1)) * U().L;
     setVal(li, RL());
+    document.querySelectorAll('.chip[data-len]').forEach(function (c) {
+      const v = parseFloat(c.dataset.len) * U().L;
+      c.textContent = v + ' ' + U().len;
+      c.classList.toggle('active', Math.abs(v - RL()) < 1e-9);
+    });
 
     const rr = $('rodMassRange'), rn = $('rodMassInput');
-    rr.max = Math.max(10, state.rodMass);
-    rn.step = state.rodMass >= 50 ? 5 : 0.5;
+    rn.min = 0; rn.max = MASS_MAX();
+    rn.step = (state.rodMass >= 50 * U().M ? 5 : 0.5) * U().M;
+    rr.max = Math.max(10 * U().M, state.rodMass);
+    rr.step = 0.5 * U().M;
     setVal(rr, state.rodMass);
     setVal(rn, state.rodMass);
     $('chkRod').checked = state.useRodWeight;
@@ -594,6 +685,7 @@
     syncControls();
     updateReadout();
     drawFulcrum();
+    save();
   }
 
   /* ============================================================
@@ -628,7 +720,7 @@
     state.masses = [];
     state.nextId = 1;
     list.forEach((d) => addMass(d[0], d[1], d[2]));
-    angle = 0; vel = 0;
+    angle = 0; omega = 0;
     changed();
   }
 
@@ -731,7 +823,7 @@
     const v = parseFloat(inp.value);
     if (!isFinite(v)) return;                       // mid-edit, e.g. "" or "1."
     const what = inp.dataset.kind || inp.dataset.num;
-    if (what === 'm') mo.m = clamp(round2(v), 0.1, 1000);
+    if (what === 'm') mo.m = clamp(round2(v), MASS_MIN(), MASS_MAX());
     else mo.x = clamp(inp.dataset.num ? toDp(v) : v, 0, RL());
     changed();
   });
@@ -797,21 +889,65 @@
     doStep(btn);
   });
 
-  $('chkForces').addEventListener('change', function () { state.showForces = this.checked; dirty = true; });
-  $('chkDist').addEventListener('change', function () { state.showDistances = this.checked; dirty = true; });
-  $('chkSnap').addEventListener('change', function () { state.snap = this.checked; });
+  $('chkForces').addEventListener('change', function () {
+    state.showForces = this.checked; dirty = true; save();
+  });
+  $('chkDist').addEventListener('change', function () {
+    state.showDistances = this.checked; dirty = true; save();
+  });
+  $('chkSnap').addEventListener('change', function () { state.snap = this.checked; save(); });
   $('chkRod').addEventListener('change', function () { state.useRodWeight = this.checked; changed(); });
   $('rodMassRange').addEventListener('input', function () {
     state.rodMass = parseFloat(this.value); changed();
   });
   $('rodMassInput').addEventListener('input', function () {
     const v = parseFloat(this.value);
-    if (isFinite(v)) { state.rodMass = clamp(round2(v), 0, 1000); changed(); }
+    if (isFinite(v)) { state.rodMass = clamp(round2(v), 0, MASS_MAX()); changed(); }
   });
   $('rodMassInput').addEventListener('change', function () { this.value = state.rodMass; });
+  /* ---------- unit system ----------
+     Nothing about the physics changes: every quantity is simply restated. */
+  function setUnits(next, quiet) {
+    if (!UNITS[next] || next === state.units) return;
+    const from = U(), to = UNITS[next];
+    const kL = to.L / from.L, kM = to.M / from.M;
+    const world = from.g.indexOf(state.g);          /* keep Earth as Earth */
+    state.units = next;
+    state.rodLength = tidy(state.rodLength * kL);
+    state.fulcrum   = tidy(state.fulcrum * kL);
+    state.rodMass   = tidy(state.rodMass * kM);
+    state.masses.forEach(function (m) {
+      m.x = tidy(m.x * kL);
+      m.m = tidy(m.m * kM);
+    });
+    state.g = to.g[world >= 0 ? world : 0];
+    document.querySelectorAll('.seg[data-units]').forEach(function (b) {
+      const on = b.dataset.units === next;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', String(on));
+    });
+    refreshGravity();
+    setGravity(state.g, true);        /* restate it on the trigger as well */
+    listSig = '';                                    /* rebuild rows for the new units */
+    buildScene();
+    if (!quiet) changed();
+  }
+  document.querySelectorAll('.seg[data-units]').forEach(function (b) {
+    b.addEventListener('click', function () { setUnits(b.dataset.units); });
+  });
+
   /* ---------- gravity: a custom listbox, so it looks and behaves the same everywhere ---------- */
   const gravWrap = $('gravSelect'), gravBtn = $('gravTrigger'), gravList = $('gravList');
   const gravOpts = () => [].slice.call(gravList.querySelectorAll('[role="option"]'));
+
+  /** Restate the three gravities in the current units. */
+  function refreshGravity() {
+    const gs = U().g;
+    gravOpts().forEach(function (o, i) {
+      o.dataset.value = String(gs[i]);
+      o.querySelector('.cselect-num').textContent = gs[i] + ' ' + U().field;
+    });
+  }
 
   function setGravity(v, quiet) {
     state.g = parseFloat(v);
@@ -874,17 +1010,16 @@
      distances are rounded, not the positions — a balanced rod stays balanced. */
   function setRodLength(next) {
     if (!isFinite(next)) return;
-    next = clamp(next, 0.1, 100);
+    next = clamp(next, LEN_MIN(), LEN_MAX());
     const k = next / state.rodLength;
     const offsets = state.masses.map((m) => (m.x - state.fulcrum) * k);
     const pivot = state.fulcrum * k;
     state.rodLength = next;
     state.fulcrum = clamp(onGrid(pivot), 0, next);
     state.masses.forEach((m, i) => {
-      m.x = clamp(state.fulcrum + onGrid(offsets[i]), 0, next);
+      /* round the sum as well, or float addition leaves 0.7999999999999998 behind */
+      m.x = clamp(onGrid(state.fulcrum + onGrid(offsets[i])), 0, next);
     });
-    document.querySelectorAll('.chip[data-len]').forEach((c) =>
-      c.classList.toggle('active', Math.abs(parseFloat(c.dataset.len) - next) < 1e-9));
     buildScene();
     changed();
   }
@@ -895,7 +1030,7 @@
   });
   document.querySelectorAll('.chip[data-len]').forEach(function (c) {
     c.addEventListener('click', function () {
-      setRodLength(parseFloat(c.dataset.len));
+      setRodLength(parseFloat(c.dataset.len) * U().L);
       $('lengthInput').value = RL();
     });
   });
@@ -920,7 +1055,12 @@
   });
   $('resetBtn').addEventListener('click', function () {
     leaveChallenge();
-    setGravity(9.8, true);
+    ch.score = 0; ch.attempts = 0; $('scoreVal').textContent = '0 / 0';
+    try { localStorage.removeItem(STORE_KEY); } catch (e) { /* nothing to clear */ }
+    state.showForces = true; state.showDistances = true; state.snap = true;
+    $('chkForces').checked = true; $('chkDist').checked = true; $('chkSnap').checked = true;
+    setUnits('mks', true);
+    setGravity(UNITS.mks.g[0], true);
     setRodLength(10); $('lengthInput').value = '10';
     state.useRodWeight = false; state.rodMass = 2;
     buildScene();
@@ -938,6 +1078,7 @@
       $('tab-' + btn.dataset.tab).classList.add('active');
       if (btn.dataset.tab === 'challenge') enterChallenge();
       else leaveChallenge();
+      save();
     });
   });
 
@@ -1075,8 +1216,8 @@
     task.fixed.forEach((k) => addMass(k.m, k.x, true));
 
     const given = '<span class="given">Pivot at ' + task.f.toFixed(posDp()) + ' m<br>' +
-      task.fixed.map((k) => k.m + ' kg at ' + k.x.toFixed(posDp()) + ' m').join('<br>') +
-      '<br>g = ' + state.g + ' N/kg</span>';
+      task.fixed.map((k) => k.m + ' ' + U().mass + ' at ' + k.x.toFixed(posDp()) + ' ' + U().len).join('<br>') +
+      '<br>g = ' + state.g + ' ' + U().field + '</span>';
 
     if (task.type === 'predict') {
       state.frozen = true;
@@ -1093,10 +1234,10 @@
       $('checkTask').disabled = false;
       $('showAnswer').disabled = false;
       $('taskTitle').textContent = 'Balance the rod';
-      $('taskText').innerHTML = 'Drag the <strong>' + task.target.m + ' kg</strong> mass — the solid one — ' +
+      $('taskText').innerHTML = 'Drag the <strong>' + task.target.m + ' ' + U().mass + '</strong> mass — the solid one — ' +
         'until the rod balances. The dashed masses are fixed.' + given;
     }
-    angle = 0; vel = 0;
+    angle = 0; omega = 0;
     changed();
   }
 
@@ -1110,15 +1251,16 @@
     ch.attempts++;
     if (correct) ch.score++;
     $('scoreVal').textContent = ch.score + ' / ' + ch.attempts;
+    save();
   }
 
   function workingOut(task) {
     const g = state.g;
     const parts = task.fixed.map((k) => '(' + k.m + ' × ' + g + ') × ' + Math.abs(k.x - task.f).toFixed(posDp()));
     const sum = task.fixed.reduce((s, k) => s + k.m * g * Math.abs(k.x - task.f), 0);
-    return '<span class="work">' + parts.join(' + ') + ' = ' + fmt(sum) + ' N·m<br>' +
-           '(' + task.target.m + ' × ' + g + ') × d = ' + fmt(sum) + ' N·m<br>d = ' +
-           task.target.d.toFixed(posDp()) + ' m</span>';
+    return '<span class="work">' + parts.join(' + ') + ' = ' + fmt(sum) + ' ' + U().moment + '<br>' +
+           '(' + task.target.m + ' × ' + g + ') × d = ' + fmt(sum) + ' ' + U().moment + '<br>d = ' +
+           task.target.d.toFixed(posDp()) + ' ' + U().len + '</span>';
   }
 
   $('newTask').addEventListener('click', function () { newChallenge(0); });
@@ -1132,14 +1274,14 @@
     $('checkTask').disabled = true;
     if (t.balanced) {
       updateScore(true);
-      setFeedback('<span class="verdict-word">Balanced</span>' + task.target.m + ' kg at ' +
-        mo.x.toFixed(posDp()) + ' m is exactly ' + task.target.d.toFixed(posDp()) + ' m from the pivot.' +
+      setFeedback('<span class="verdict-word">Balanced</span>' + task.target.m + ' ' + U().mass + ' at ' +
+        mo.x.toFixed(posDp()) + ' ' + U().len + ' is exactly ' + task.target.d.toFixed(posDp()) + ' ' + U().len + ' from the pivot.' +
         workingOut(task), 'good');
     } else {
       updateScore(false);
       setFeedback('<span class="verdict-word">Not yet</span>There is still <strong>' +
-        fmt(Math.abs(t.net)) + ' N·m</strong> too much ' + (t.net > 0 ? 'clockwise' : 'anticlockwise') +
-        ' moment. It needs to be <strong>' + task.target.d.toFixed(posDp()) + ' m</strong> from the pivot.' +
+        fmt(Math.abs(t.net)) + ' ' + U().moment + '</strong> too much ' + (t.net > 0 ? 'clockwise' : 'anticlockwise') +
+        ' moment. It needs to be <strong>' + task.target.d.toFixed(posDp()) + ' ' + U().len + '</strong> from the pivot.' +
         workingOut(task), 'bad');
       if (mo) { mo.x = task.target.x; changed(); }
     }
@@ -1151,8 +1293,8 @@
     const mo = state.masses.find((k) => k.id === task.targetId);
     if (mo) { mo.x = task.target.x; changed(); }
     if (!ch.answered) { ch.answered = true; updateScore(false); $('checkTask').disabled = true; }
-    setFeedback('<span class="verdict-word">Answer</span>The ' + task.target.m + ' kg mass belongs at <strong>' +
-      task.target.x.toFixed(posDp()) + ' m</strong> — that is ' + task.target.d.toFixed(posDp()) +
+    setFeedback('<span class="verdict-word">Answer</span>The ' + task.target.m + ' ' + U().mass + ' mass belongs at <strong>' +
+      task.target.x.toFixed(posDp()) + ' ' + U().len + '</strong> — that is ' + task.target.d.toFixed(posDp()) +
       ' m from the pivot.' + workingOut(task), 'info');
   });
 
@@ -1169,8 +1311,8 @@
                             .reduce((s, k) => s + k.m * g * (task.f - k.x), 0);
       const cw  = task.fixed.filter((k) => k.x > task.f)
                             .reduce((s, k) => s + k.m * g * (k.x - task.f), 0);
-      const work = '<span class="work">anticlockwise = ' + fmt(acw) + ' N·m<br>clockwise = ' +
-                   fmt(cw) + ' N·m</span>';
+      const work = '<span class="work">anticlockwise = ' + fmt(acw) + ' ' + U().moment + '<br>clockwise = ' +
+                   fmt(cw) + ' ' + U().moment + '</span>';
       updateScore(guess === right);
       setFeedback((guess === right
         ? '<span class="verdict-word">Correct</span>It ' + names[right] + '.'
@@ -1180,6 +1322,121 @@
       changed();
     });
   });
+
+  /* ============================================================
+     SAVED SET-UP
+     Everything lives in this browser only — nothing is sent anywhere.
+     Storage can be unavailable (private windows, blocked site data) or full,
+     so every call is guarded: the lab must work with or without it.
+     ============================================================ */
+  const STORE_KEY = 'moment-of-force-lab/v1';
+  let saveTimer = null;
+
+  function save() {                      /* debounced: changed() fires on every drag frame */
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(writeState, 250);
+  }
+
+  function writeState() {
+    /* While a challenge is running the masses on screen are the task's, not the
+       user's — so persist the set-up they left behind, not the puzzle. */
+    const src = (state.mode === 'challenge' && exploreSnapshot) ? exploreSnapshot : state;
+    const active = document.querySelector('.tab.active');
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        v: 1,
+        units: state.units,
+        rodLength: state.rodLength,
+        g: state.g,
+        showForces: state.showForces,
+        showDistances: state.showDistances,
+        snap: state.snap,
+        scene: {
+          fulcrum: src.fulcrum,
+          useRodWeight: src.useRodWeight,
+          rodMass: src.rodMass,
+          masses: src.masses.map((m) => ({
+            m: m.m, x: m.x, color: m.color, enabled: m.enabled !== false
+          }))
+        },
+        tab: active ? active.dataset.tab : 'explore',
+        score: { score: ch.score, attempts: ch.attempts }
+      }));
+    } catch (e) { /* out of space or storage denied — carry on unsaved */ }
+  }
+
+  /* A write may still be pending when the tab goes away — flush it. */
+  window.addEventListener('pagehide', writeState);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') writeState();
+  });
+
+  /** Read the saved set-up, distrusting every value in it. */
+  function loadState() {
+    let raw = null;
+    try { raw = localStorage.getItem(STORE_KEY); } catch (e) { return false; }
+    if (!raw) return false;
+    let d;
+    try { d = JSON.parse(raw); } catch (e) { return false; }
+    if (!d || d.v !== 1) return false;
+
+    const num = (v, lo, hi, dflt) =>
+      (typeof v === 'number' && isFinite(v)) ? clamp(v, lo, hi) : dflt;
+    const bool = (v, dflt) => (typeof v === 'boolean' ? v : dflt);
+
+    state.units = UNITS[d.units] ? d.units : 'mks';       /* units first: limits depend on them */
+    state.rodLength = num(d.rodLength, LEN_MIN(), LEN_MAX(), 10 * U().L);
+    state.g = U().g.indexOf(d.g) >= 0 ? d.g : U().g[0];
+    state.showForces    = bool(d.showForces, true);
+    state.showDistances = bool(d.showDistances, true);
+    state.snap          = bool(d.snap, true);
+
+    const sc = (d.scene && typeof d.scene === 'object') ? d.scene : {};
+    state.fulcrum      = num(sc.fulcrum, 0, state.rodLength, state.rodLength / 2);
+    state.useRodWeight = bool(sc.useRodWeight, false);
+    state.rodMass      = num(sc.rodMass, 0, MASS_MAX(), 2 * U().M);
+
+    state.masses = [];
+    state.nextId = 1;
+    const list = Array.isArray(sc.masses) ? sc.masses.slice(0, MAX_MASSES) : [];
+    list.forEach(function (m) {
+      if (!m || typeof m !== 'object') return;
+      const obj = addMass(num(m.m, MASS_MIN(), MASS_MAX(), 2 * U().M),
+                          num(m.x, 0, state.rodLength, state.rodLength / 2));
+      if (!obj) return;
+      obj.enabled = bool(m.enabled, true);
+      if (typeof m.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(m.color)) obj.color = m.color;
+    });
+
+    if (d.score && typeof d.score === 'object') {
+      ch.score = num(d.score.score, 0, 1e6, 0);
+      ch.attempts = num(d.score.attempts, 0, 1e6, 0);
+      if (ch.score > ch.attempts) ch.score = ch.attempts;
+      $('scoreVal').textContent = ch.score + ' / ' + ch.attempts;
+    }
+    state.savedTab = ['explore', 'challenge', 'learn'].indexOf(d.tab) >= 0 ? d.tab : 'explore';
+    return true;
+  }
+
+  /** Push the loaded values out to every control that mirrors them. */
+  function applyLoaded() {
+    document.querySelectorAll('.seg[data-units]').forEach(function (b) {
+      const on = b.dataset.units === state.units;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', String(on));
+    });
+    refreshGravity();
+    $('chkForces').checked = state.showForces;
+    $('chkDist').checked = state.showDistances;
+    $('chkSnap').checked = state.snap;
+    setGravity(state.g, true);
+    buildScene();                                  /* re-mark for the saved length */
+    changed();
+    if (state.savedTab && state.savedTab !== 'explore') {
+      const t = document.querySelector('.tab[data-tab="' + state.savedTab + '"]');
+      if (t) t.click();
+    }
+  }
 
   /* ============================================================
      RESPONSIVE SCENE
@@ -1202,12 +1459,38 @@
   /* ============================================================
      ANIMATION  (a lightly damped spring towards the target tilt)
      ============================================================ */
-  function frame() {
-    const target = targetAngle();
-    vel += (target - angle) * 0.12;
-    vel *= 0.82;
+  let lastFrame = 0;
+  function frame(now) {
+    const t = (typeof now === 'number') ? now : Date.now();
+    let dt = lastFrame ? (t - lastFrame) / 1000 : 0;
+    lastFrame = t;
+    dt = clamp(dt, 0, 0.05);                  /* a backgrounded tab must not leap */
     const before = angle;
-    angle += vel;
+
+    if (state.frozen) {                        /* held level while a prediction is due */
+      omega = 0;
+      angle = Math.abs(angle) > 1e-3 ? angle * 0.72 : 0;
+    } else if (dt > 0) {
+      const b = beam();
+      if (b.inertia > 1e-12) {
+        const inertia = b.inertia / (SPEED * SPEED);
+        const stiff = Math.max(b.weight * b.h, 1e-12);
+        const damp = 2 * DAMPING * Math.sqrt(stiff * inertia);
+        const lim = maxTilt(), sub = 4, step = dt / sub;
+        for (let i = 0; i < sub; i++) {
+          const th = angle * DEG;
+          const net = Math.cos(th) * b.torque - stiff * Math.sin(th) - damp * omega;
+          omega += (net / inertia) * step;
+          angle += omega * step / DEG;
+          if (angle > lim || angle < -lim) {  /* met the stand */
+            angle = angle > 0 ? lim : -lim;
+            omega = -omega * 0.18;
+            if (Math.abs(omega) < 0.25) omega = 0;
+          }
+        }
+      } else { omega = 0; }
+    }
+
     if (Math.abs(angle - before) > 0.002 || dirty) { render(); dirty = false; }
     requestAnimationFrame(frame);
   }
@@ -1215,7 +1498,9 @@
   /* ============================================================
      START
      ============================================================ */
+  const restored = loadState();
   checkLayout();
-  setScene(5, [[2, 2], [3, 8]]);
+  if (restored) applyLoaded();
+  else setScene(5, [[2, 2], [3, 8]]);
   requestAnimationFrame(frame);
 })();

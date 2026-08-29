@@ -114,7 +114,7 @@
           <strong id="cwTotal">0 N·m</strong>
         </div>
       </div>
-      <p class="sums-note">Forces in newtons (N), distances in metres (m) measured from the pivot.</p>
+      <p class="sums-note" id="sumsNote">Forces in newtons (N), distances in metres (m) measured from the pivot.</p>
 
       <p class="verdict" id="verdict"></p>
     </div>
@@ -130,6 +130,21 @@
 
     <!-- ---------- EXPLORE ---------- -->
     <div class="card tabpanel active" id="tab-explore">
+
+      <section class="ctrl-block">
+        <div class="row-head"><span class="label">Unit system</span></div>
+        <div class="segmented" role="radiogroup" aria-label="Unit system">
+          <button type="button" class="seg active" data-units="mks" role="radio" aria-checked="true">
+            <span class="seg-name">MKS</span><span class="seg-sub">m · kg · N</span>
+          </button>
+          <button type="button" class="seg" data-units="cgs" role="radio" aria-checked="false">
+            <span class="seg-name">CGS</span><span class="seg-sub">cm · g · dyne</span>
+          </button>
+        </div>
+        <p class="micro">Switching converts the whole experiment — the same physics, written in
+        different units. CGS moments run to millions of dyne·centimetres, so large numbers are
+        shown in standard form.</p>
+      </section>
 
       <section class="ctrl-block">
         <div class="row-head"><label for="lengthInput">Length of the rod</label></div>
@@ -165,7 +180,7 @@
           <span class="step-field">
             <input type="number" id="fulcrumInput" inputmode="decimal"
                    min="0" max="10" step="0.25" value="5">
-            <span class="unit">m</span>
+            <span class="unit" id="fulcrumUnit">m</span>
           </span>
           <button type="button" class="step-btn" data-step="1" tabindex="-1"
                   aria-label="Move pivot right">+</button>
@@ -180,7 +195,7 @@
           <button class="btn tiny" id="addMass">+ Add mass</button>
         </div>
         <div id="massList" class="mass-list"></div>
-        <p class="micro">Type any mass from 0.1 kg to 1000 kg, and any position on the rod.
+        <p class="micro" id="massHint">Type any mass from 0.1 kg to 1000 kg, and any position on the rod.
         Switch a mass <strong>off</strong> to lift it clear without losing it — its moment stops
         counting, but it keeps its place so you can switch it back on.</p>
       </section>
@@ -203,7 +218,7 @@
             <span class="step-field">
               <input type="number" id="rodMassInput" inputmode="decimal"
                      min="0" max="1000" step="0.5" value="2">
-              <span class="unit">kg</span>
+              <span class="unit" id="rodMassUnit">kg</span>
             </span>
             <button type="button" class="step-btn" data-step="1" tabindex="-1"
                     aria-label="Heavier rod">+</button>
@@ -264,6 +279,9 @@
           <button class="btn preset" data-preset="three">Three masses puzzle</button>
         </div>
         <button class="btn ghost wide" id="resetBtn">Reset the lab</button>
+        <p class="micro">Your set-up — rod, masses, pivot, gravity and all the switches — is kept in
+        this browser, so it is still here next time. Nothing leaves your device.
+        <strong>Reset</strong> clears it and starts fresh.</p>
       </section>
     </div>
 
@@ -302,7 +320,7 @@
       <div class="formula">
         moment = force × perpendicular distance from the pivot<br>
         <span class="fsym">M = F × d</span>
-        <span class="funit">newton (N) × metre (m) = newton metre (N·m)</span>
+        <span class="funit" id="formulaUnit">newton (N) × metre (m) = newton metre (N·m)</span>
       </div>
 
       <h3>The pivot</h3>
@@ -330,6 +348,18 @@
       the rod's centre. That is <em>why</em> the centre-of-mass shortcut works — but the two pieces
       show you where the answer comes from. Tick <strong>Rod has weight</strong> and slide the pivot
       to watch the two moments trade places.</p>
+
+      <h3>Why it leans the way it does</h3>
+      <p>A weight on a string always pulls straight down, so when the beam tilts by θ its lever arm
+      becomes <em>d</em> cos θ. Every moment shrinks by the same factor — which means an unbalanced
+      beam never finds a tilt where the moments agree. It keeps going until it hits the stand.</p>
+      <p>What stops a real balance doing that is the pivot sitting a whisker <em>above</em> the
+      beam's centre of gravity. That gives a restoring pull, and the beam settles where</p>
+      <div class="example"><p class="step">tan θ = net moment ÷ (total weight × h)</p></div>
+      <p>with <em>h</em> the height of the pivot above the centre of gravity — what a balance maker
+      calls the beam's <strong>sensitivity</strong>. Notice the size of the masses cancels: halve
+      every mass and the total weight halves too, so the lean is unchanged. A gram leans exactly
+      like a kilogram, which is why a sensitive balance works with tiny riders.</p>
 
       <h3>Worked example</h3>
       <div class="example">
