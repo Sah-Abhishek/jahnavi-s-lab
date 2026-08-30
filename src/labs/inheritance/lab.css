@@ -1,0 +1,224 @@
+/* ============================================================
+   Inheritance Lab — what belongs to this lab alone.
+   The layout, status bar, tabs, tables, challenge and learn
+   furniture all come from styles/lab-shell.css.
+   ============================================================ */
+
+/* ---------- the parents ---------- */
+.parent-box{fill:var(--surface-sunk);stroke:var(--rule);stroke-width:1}
+.parent-name{
+  fill:var(--ink-faint);font-family:var(--f-mono);letter-spacing:.13em;
+  font-size:calc(var(--u,1) * 9.5px);text-transform:uppercase;
+}
+.parent-pheno{
+  fill:var(--ink-soft);font-family:var(--f-mono);font-size:calc(var(--u,1) * 10.5px);
+}
+.cross-sign{
+  fill:var(--ink-faint);font-family:var(--f-serif);font-size:calc(var(--u,1) * 22px);
+}
+.allele{cursor:pointer}
+.allele.locked{cursor:default}
+.allele:focus{outline:none}
+.allele-hit{fill:var(--surface);stroke:var(--rule);stroke-width:1;rx:4}
+.allele-text{
+  fill:var(--ink);font-family:var(--f-mono);font-weight:600;
+  font-size:calc(var(--u,1) * 15px);
+}
+.allele:hover .allele-hit,.allele:focus-visible .allele-hit{
+  stroke:var(--draft);stroke-width:2;fill:var(--draft-wash);
+}
+.allele.locked:hover .allele-hit{stroke:var(--rule);stroke-width:1;fill:var(--surface)}
+
+/* ---------- the square ---------- */
+.gamete-note{
+  fill:var(--ink-faint);font-family:var(--f-mono);font-size:calc(var(--u,1) * 9.5px);
+  letter-spacing:.06em;
+}
+.sq-corner{fill:var(--surface-sunk);stroke:var(--rule);stroke-width:1}
+.sq-head{fill:var(--draft-wash);stroke:var(--rule);stroke-width:1}
+.sq-head-text{
+  fill:var(--draft);font-family:var(--f-mono);font-weight:600;
+  font-size:calc(var(--u,1) * 13px);
+}
+.sq-fill{stroke:var(--surface);stroke-width:1.5}
+.sq-hidden{stroke:var(--rule);stroke-width:1;stroke-dasharray:4 3}
+.sq-question{
+  fill:var(--ink-faint);font-family:var(--f-mono);font-size:calc(var(--u,1) * 18px);
+}
+.sq-genotype{
+  fill:#fff;font-family:var(--f-mono);font-weight:600;font-size:calc(var(--u,1) * 13px);
+}
+.sq-pheno{
+  fill:#fff;font-family:var(--f-mono);font-size:calc(var(--u,1) * 9.5px);opacity:.92;
+}
+.sq-cell.dim{opacity:.22}
+.sq-cell{transition:opacity .18s}
+
+/* ---------- the key ---------- */
+.legend-head{
+  fill:var(--ink-faint);font-family:var(--f-mono);letter-spacing:.14em;
+  font-size:calc(var(--u,1) * 9.5px);
+}
+.legend-row{cursor:pointer;transition:opacity .18s}
+.legend-row.dim{opacity:.35}
+.legend-row:focus{outline:none}
+.legend-hit{fill:transparent}
+.legend-row:hover .legend-hit,.legend-row:focus-visible .legend-hit{fill:var(--surface-sunk)}
+.legend-swatch{stroke:var(--surface);stroke-width:1.5}
+.legend-label{fill:var(--ink);font-family:var(--f-sans);font-size:calc(var(--u,1) * 12.5px)}
+.legend-count{
+  fill:var(--ink-faint);font-family:var(--f-mono);font-size:calc(var(--u,1) * 11px);
+  font-variant-numeric:tabular-nums;
+}
+
+/* ---------- the working out ---------- */
+.cross-card td.bred b{color:var(--level);font-weight:600}
+.sum.tint-expected{--tint:var(--draft);--tint-wash:var(--draft-wash)}
+.sum.tint-bred{--tint:var(--level);--tint-wash:var(--level-wash)}
+.sum-foot{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.04em;opacity:.75;margin-top:1px;
+}
+.working{
+  margin-top:18px;padding:15px;border-radius:7px;
+  background:var(--surface-sunk);border:1px solid var(--rule);
+}
+.working-head{
+  display:block;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-faint);margin-bottom:9px;
+}
+.working code{
+  display:block;white-space:pre-wrap;font-family:var(--f-mono);font-size:13px;
+  line-height:1.75;color:var(--ink);font-variant-numeric:tabular-nums;overflow-x:auto;
+}
+.working-note{margin:11px 0 0;font-size:13px;color:var(--ink-soft)}
+
+/* ---------- the litter ---------- */
+.litter{
+  margin-top:14px;padding:15px;border-radius:7px;
+  background:var(--surface-sunk);border:1px solid var(--rule);
+}
+.dot-grid{display:flex;flex-wrap:wrap;gap:3px;margin:2px 0 4px}
+.dot{
+  width:11px;height:11px;border-radius:2px;flex:none;
+  transition:opacity .18s;
+}
+.dot.dim{opacity:.2}
+
+/* ---------- the controls ---------- */
+.parent-ctrl{
+  padding:12px;border:1px solid var(--rule);border-radius:8px;
+  background:var(--surface-sunk);border-left:3px solid var(--tint);
+}
+.parent-ctrl[data-parent="p1"]{--tint:var(--draft)}
+.parent-ctrl[data-parent="p2"]{--tint:var(--level);margin-top:10px}
+.parent-ctrl-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.arm-title{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.arm-period{
+  font-family:var(--f-mono);font-size:14px;font-weight:600;color:var(--ink);
+  letter-spacing:.04em;
+}
+.gene-row + .gene-row{margin-top:9px}
+.field-label{
+  display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-faint);margin:10px 0 5px;
+}
+.segmented.three{grid-template-columns:repeat(3,1fr)}
+.breed-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.breed-row .btn{width:100%;padding:9px 4px}
+.bred-count{
+  font-family:var(--f-mono);font-size:11px;color:var(--level);font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.wide-tiny{width:100%;margin-top:8px}
+
+/* ---------- the "find the parents" challenge ---------- */
+.tune-box{
+  padding:13px;border:1px solid var(--rule);border-radius:8px;
+  background:var(--surface-sunk);margin-bottom:14px;
+}
+.tune-box .field-label:first-child{margin-top:0}
+.tune-now{
+  margin:11px 0 0;font-family:var(--f-mono);font-size:12.5px;color:var(--ink-soft);
+}
+.tune-now strong{color:var(--ink)}
+.tune-target{color:var(--ink-faint)}
+
+@media (max-width:560px){
+  .breed-row{grid-template-columns:repeat(2,1fr)}
+  .dot{width:9px;height:9px}
+}
+
+/* ---------- the compact drawing has less room for words ----------
+   Its --u is larger, so type that is comfortable on the wide drawing comes
+   out proportionally bigger here and starts running into its neighbours. */
+#scene.compact .legend-label{font-size:calc(var(--u,1) * 10px)}
+#scene.compact .legend-count{font-size:calc(var(--u,1) * 9.5px)}
+#scene.compact .sq-genotype{font-size:calc(var(--u,1) * 11px)}
+#scene.compact .sq-pheno{font-size:calc(var(--u,1) * 8.5px)}
+#scene.compact .allele-text{font-size:calc(var(--u,1) * 13px)}
+
+/* ---------- allele superscripts: Xᵇ, Iᴬ ---------- */
+.sup{font-size:0.68em}
+
+/* ---------- the two ratios, named the way an exam names them ---------- */
+.ratios{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.ratio-block{
+  padding:14px 15px;border-radius:7px;
+  background:var(--surface-sunk);border:1px solid var(--rule);
+}
+.ratio-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin-bottom:7px}
+.ratio-term{
+  display:inline-flex;align-items:baseline;gap:6px;
+  font-family:var(--f-mono);font-size:13.5px;color:var(--ink-soft);
+}
+.ratio-term em{font-style:normal;color:var(--ink-faint);margin-right:1px}
+.ratio-term b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.ratio-pheno{font-weight:500}
+.ratio-total{
+  display:block;font-family:var(--f-mono);font-size:20px;font-weight:600;color:var(--ink);
+  font-variant-numeric:tabular-nums;letter-spacing:.02em;
+}
+
+/* ---------- the same thing said as odds ---------- */
+.chances{
+  margin-top:14px;padding:15px;border-radius:7px;
+  background:var(--surface-sunk);border:1px solid var(--rule);
+}
+.chances ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.chances li{
+  display:grid;grid-template-columns:14px 5.5em 3.6em 3.2em 1fr;align-items:center;gap:10px;
+  font-size:13.5px;color:var(--ink-soft);
+}
+.chances .swatch{width:12px;height:12px;border-radius:2px}
+.chance-odds{
+  font-family:var(--f-mono);font-size:14px;font-weight:600;color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.chance-pct,.chance-frac{
+  font-family:var(--f-mono);font-size:12.5px;color:var(--ink-faint);
+  font-variant-numeric:tabular-nums;
+}
+.chance-what{min-width:0}
+.cross-card td.chance b{color:var(--draft);font-weight:600}
+
+/* ---------- segmented controls with more than two ways to go ---------- */
+.segmented.n2{grid-template-columns:repeat(2,1fr)}
+.segmented.n3{grid-template-columns:repeat(3,1fr)}
+.segmented.n4{grid-template-columns:repeat(2,1fr)}
+.segmented.n5,.segmented.n6{grid-template-columns:repeat(3,1fr)}
+.seg-sub{white-space:normal;line-height:1.25;text-align:center}
+.warn-note{color:var(--ink-soft)}
+.parent-ctrl sup,.arm-period sup,.pill sup,.ratio-term sup,.sheet-card sup{
+  font-size:.68em;line-height:0;
+}
+
+@media (max-width:900px){
+  .ratios{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .chances li{grid-template-columns:14px 5.5em 3.6em 1fr;gap:8px}
+  .chance-frac{display:none}
+}

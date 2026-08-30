@@ -58,6 +58,27 @@ export const LABS = [
     component: lazy(() => import('../labs/simple-pendulum/SimplePendulumLab')),
   },
 
+  {
+    slug: 'inheritance',
+    title: 'Inheritance',
+    topic: 'Genes, alleles and ratios',
+    subject: 'biology',
+    level: 'Class 9–10',
+    status: 'ready',
+    blurb: 'Cross two parents and watch the 3 : 1 ratio come out of the square.',
+    summary: 'A Punnett square you can rebuild by clicking any allele, from a single gene to ' +
+             "Mendel's two-gene cross — and a litter you can actually breed from it, so the " +
+             'ratio the square predicts always has real offspring to answer to.',
+    tags: ['genetics', 'punnett', 'mendel', 'alleles', 'dominance', 'probability', 'dna'],
+    teaches: [
+      'Why three genotypes can show only two appearances',
+      'Where 3 : 1 and 9 : 3 : 3 : 1 actually come from',
+      'Using a test cross to find what an organism is carrying',
+      'Why a real litter never lands exactly on the ratio',
+    ],
+    component: lazy(() => import('../labs/inheritance/InheritanceLab')),
+  },
+
   /* ---------- the shelf ahead ----------
      Placeholders, marked so, so the catalogue shows where each subject is going.
      Delete an entry or give it a component and status:'ready' when its lab lands. */
@@ -79,9 +100,6 @@ export const LABS = [
     subject: 'maths', level: 'Class 7–9', status: 'soon',
     blurb: 'Roll ten times, then ten thousand, and see where the shape settles.' },
 
-  { slug: 'punnett-square', title: 'Inheritance', topic: 'Genes, alleles and ratios',
-    subject: 'biology', level: 'Class 9–10', status: 'soon',
-    blurb: 'Cross two parents and watch the 3 : 1 ratio come out of the square.' },
   { slug: 'photosynthesis', title: 'Photosynthesis Rate', topic: 'What limits a plant',
     subject: 'biology', level: 'Class 8–10', status: 'soon',
     blurb: 'Change the light, the CO₂ and the temperature, and count the bubbles.' },

@@ -18,8 +18,11 @@ npm test           # check the physics headlessly — no browser needed
 
 `npm test` runs the suites in `test/`. They import each lab's `engine.js` and
 `labState.js` directly and check the science against known results: moments and the
-centre-of-mass identity, and the simulated pendulum period
-against the elliptic-integral solution at half a dozen amplitudes. They also generate a few
+centre-of-mass identity; the simulated pendulum period against the elliptic-integral
+solution at half a dozen amplitudes; every Punnett square the inheritance lab can
+build, plus Mendel's own 556 seeds coming out at χ² = 0.470 and the structural laws
+sex linkage has to obey — no YY 'person', exactly half of every square sons, and every
+son's X coming from his mother. They also generate a few
 hundred challenges apiece and confirm every one is answerable, and feed each lab's
 saved-state reader deliberately corrupted storage.
 
@@ -49,6 +52,7 @@ src/
       LearnPanel.jsx      the explanation
       lab.css             only what is this lab's own
     simple-pendulum/      the same shape, a different experiment
+    inheritance/          and again
 ```
 
 Every lab follows that shape. The rule that keeps them honest: **`engine.js` never
@@ -102,6 +106,25 @@ out. Hang a second pendulum beside the first to settle whether a heavier bob swi
 slower (it does not). The exact period comes from the elliptic integral K, by the
 arithmetic–geometric mean; at 45° the textbook formula is 4.0% fast, and the lab's
 own clock agrees to a fraction of a millisecond.
+
+**Inheritance** — a Punnett square rebuilt live from two parents, with every allele a
+button. Ten crosses across three shelves:
+
+- *Classic* — pea seed shape and colour (one gene or two, 3 : 1 and 9 : 3 : 3 : 1),
+  snapdragons (incomplete dominance) and shorthorn cattle (codominance), both 1 : 2 : 1.
+- *Human* — cystic fibrosis (recessive: two healthy carriers, 1 in 4), Huntington's
+  (dominant: one affected parent, 1 in 2), and ABO blood groups, where three alleles
+  and codominance let an AB parent and an O parent have children like neither of them.
+- *Sex-linked* — colour blindness and haemophilia on the X chromosome. Here the two
+  parents stop being interchangeable: the mother has two X chromosomes and the father
+  one X and a Y, and the controls only ever offer each of them what they could be. The
+  square then shows why a carrier mother's affected children are all sons, and why a
+  haemophiliac father cannot pass it to a son at all.
+
+Every cross reports its **genotypic ratio**, its **phenotypic ratio**, and the chance
+of each outcome three ways — "1 in 4", 25%, 1/4. Then breed an actual family from it
+and watch the observed ratio walk in towards the predicted one as the numbers climb,
+with chi-squared to say whether the gap is the sort of thing chance produces.
 
 ## Notes
 
