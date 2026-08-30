@@ -1,0 +1,116 @@
+/* ============================================================
+   Jahnavi's Lab — design tokens
+   The identity is a laboratory notebook: graph paper, draft-blue
+   ink, technical-drawing rules. The site shell adds one warm
+   accent (the mascot's pink) so the catalogue reads as friendly
+   without the labs themselves losing their precision.
+
+   Complete light palette on bare :root; dark redefines only the
+   tokens, twice — once for prefers-color-scheme, once for an
+   explicit [data-theme="dark"] so the toggle wins both ways.
+   ============================================================ */
+:root{
+  --paper:#f1f4f7;
+  --surface:#ffffff;
+  --surface-sunk:#f6f8fa;
+  --ink:#141c26;
+  --ink-soft:#48596d;
+  --ink-faint:#637181;
+  --rule:#d8e0e8;
+  --rule-soft:#e8edf2;
+
+  --draft:#2e4a7d;          /* structure, pivot, controls */
+  --draft-wash:#e7edf6;
+  --acw:#0b6e8c;            /* anticlockwise */
+  --acw-wash:#e2f1f6;
+  --cw:#bc432b;             /* clockwise */
+  --cw-wash:#fbeae6;
+  --level:#1b7a5a;          /* balanced */
+  --level-wash:#e2f2ec;
+
+  /* the shell's warm accent, taken from the mascot's shirt */
+  --blossom:#c2447a;
+  --blossom-wash:#fbe9f1;
+
+  --grid-minor:#dbe4ec;
+  --grid-major:#c6d3e0;
+  --rod-a:#dbe1e9; --rod-b:#9aa6b6; --rod-c:#7f8b9c; --rod-edge:#6a7686;
+  --wedge-a:#3a5a93; --wedge-b:#2e4a7d; --wedge-c:#233c69;
+  --hanger:#5b6b7d;
+
+  /* subject colours: each keeps white numerals at 4.5:1 */
+  --physics:#2e4a7d;   --physics-wash:#e7edf6;
+  --chemistry:#0b6e8c; --chemistry-wash:#e2f1f6;
+  --maths:#8a4a12;     --maths-wash:#f8ecdf;
+  --biology:#1b7a5a;   --biology-wash:#e2f2ec;
+
+  --shadow:0 1px 1px rgba(20,28,38,.04), 0 12px 28px -18px rgba(20,28,38,.45);
+  --shadow-lift:0 2px 4px rgba(20,28,38,.05), 0 22px 44px -24px rgba(20,28,38,.5);
+  --r:10px;
+  --r-lg:16px;
+
+  --f-serif:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  --f-sans:"IBM Plex Sans","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+  --f-mono:"IBM Plex Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+
+  --shell-max:1320px;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0d131a;
+    --surface:#161e27;
+    --surface-sunk:#111921;
+    --ink:#e8eef5;
+    --ink-soft:#a3b3c4;
+    --ink-faint:#75879a;
+    --rule:#26313d;
+    --rule-soft:#1e2833;
+
+    --draft:#89aae6;
+    --draft-wash:#1b2738;
+    --acw:#4cc0de;
+    --acw-wash:#102c36;
+    --cw:#f4805f;
+    --cw-wash:#331b16;
+    --level:#4ed6a2;
+    --level-wash:#123026;
+
+    --blossom:#f294bb;
+    --blossom-wash:#33192486;
+
+    --grid-minor:#1b242e;
+    --grid-major:#243040;
+    --rod-a:#7d8898; --rod-b:#5b6673; --rod-c:#4a545f; --rod-edge:#39424d;
+    --wedge-a:#4a6da8; --wedge-b:#3a5890; --wedge-c:#2b4373;
+    --hanger:#8496a8;
+
+    --physics:#89aae6;   --physics-wash:#1b2738;
+    --chemistry:#4cc0de; --chemistry-wash:#102c36;
+    --maths:#e0a463;     --maths-wash:#2e2113;
+    --biology:#4ed6a2;   --biology-wash:#123026;
+
+    --shadow:0 1px 1px rgba(0,0,0,.4), 0 16px 34px -20px rgba(0,0,0,.9);
+    --shadow-lift:0 2px 4px rgba(0,0,0,.45), 0 26px 50px -26px rgba(0,0,0,1);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0d131a; --surface:#161e27; --surface-sunk:#111921;
+  --ink:#e8eef5; --ink-soft:#a3b3c4; --ink-faint:#75879a;
+  --rule:#26313d; --rule-soft:#1e2833;
+  --draft:#89aae6; --draft-wash:#1b2738;
+  --acw:#4cc0de; --acw-wash:#102c36;
+  --cw:#f4805f; --cw-wash:#331b16;
+  --level:#4ed6a2; --level-wash:#123026;
+  --blossom:#f294bb; --blossom-wash:#33192486;
+  --grid-minor:#1b242e; --grid-major:#243040;
+  --rod-a:#7d8898; --rod-b:#5b6673; --rod-c:#4a545f; --rod-edge:#39424d;
+  --wedge-a:#4a6da8; --wedge-b:#3a5890; --wedge-c:#2b4373;
+  --hanger:#8496a8;
+  --physics:#89aae6;   --physics-wash:#1b2738;
+  --chemistry:#4cc0de; --chemistry-wash:#102c36;
+  --maths:#e0a463;     --maths-wash:#2e2113;
+  --biology:#4ed6a2;   --biology-wash:#123026;
+  --shadow:0 1px 1px rgba(0,0,0,.4), 0 16px 34px -20px rgba(0,0,0,.9);
+  --shadow-lift:0 2px 4px rgba(0,0,0,.45), 0 26px 50px -26px rgba(0,0,0,1);
+}

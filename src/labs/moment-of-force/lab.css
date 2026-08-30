@@ -1,0 +1,138 @@
+/* ============================================================
+   Moment of Force Lab — what belongs to this lab alone.
+   The layout, status bar, tabs, challenge and learn furniture
+   all come from styles/lab-shell.css.
+
+   Visual identity: laboratory notebook / technical drawing.
+   The graph paper behind the rod is aligned to its metre marks,
+   so a distance can be read straight off the page.
+   ============================================================ */
+
+/* ---- gradients and scene parts, painted from the tokens ---- */
+#rodGrad stop:nth-child(1){stop-color:var(--rod-a)}
+#rodGrad stop:nth-child(2){stop-color:var(--rod-b)}
+#rodGrad stop:nth-child(3){stop-color:var(--rod-c)}
+#rodGrad stop:nth-child(4){stop-color:var(--rod-a)}
+#fulcrumGrad stop:nth-child(1){stop-color:var(--wedge-a)}
+#fulcrumGrad stop:nth-child(2){stop-color:var(--wedge-b)}
+#fulcrumGrad stop:nth-child(3){stop-color:var(--wedge-c)}
+
+/* graph paper */
+.grid-minor{stroke:var(--grid-minor);stroke-width:1}
+.grid-major{stroke:var(--grid-major);stroke-width:1.2}
+
+/* the rod and its markings */
+.rod-face{fill:url(#rodGrad);stroke:var(--rod-edge)}
+.tick{stroke:var(--rod-edge)}
+.tick-label{fill:var(--ink-faint);font-family:var(--f-mono);font-size:calc(var(--u,1) * 11px)}
+
+/* the fulcrum */
+/* the gradient the tokens define, actually applied — the wedge is not flat black */
+.fwedge{fill:url(#fulcrumGrad)}
+.fplate{fill:var(--wedge-c)}
+.fpin{fill:var(--surface);stroke:var(--wedge-c)}
+.pivot-label{
+  fill:var(--draft);font-family:var(--f-mono);font-weight:600;
+  font-size:calc(var(--u,1) * 12px);
+}
+.fulcrum-grp{cursor:ew-resize}
+.fulcrum-grp.locked{cursor:not-allowed}
+.fulcrum-grp:focus{outline:none}
+.fulcrum-grp:hover .fwedge,.fulcrum-grp:focus-visible .fwedge{filter:brightness(1.15)}
+
+/* the hanging masses */
+.hanger{stroke:var(--hanger)}
+.hook{fill:var(--hanger)}
+.mass-cap{fill:var(--ink-soft);font-family:var(--f-mono);font-size:calc(var(--u,1) * 11px)}
+.mbox{stroke:var(--surface)}
+.mbox.fixed{stroke:var(--ink-faint);stroke-dasharray:4 3}
+.mbox.idle{stroke:var(--ink-faint);stroke-dasharray:3 3}
+.mbox.auto{stroke:var(--level);stroke-width:3}
+.mbox-label{fill:#fff;font-family:var(--f-mono)}
+/* the compact drawing has no room for a number inside the block */
+#scene.compact .mbox-label{display:none}
+/* a mass that is switched off stays on the rod but stops counting */
+.mass-grp.off{opacity:.34}
+.mass-grp{cursor:grab}
+.mass-grp.locked{cursor:not-allowed}
+.mass-grp:focus{outline:none}
+.mass-grp:hover .mbox,.mass-grp:focus-visible .mbox{stroke:var(--ink);stroke-width:3}
+.mass-grp.locked:hover .mbox{stroke:var(--ink-faint);stroke-width:2}
+
+/* distances, measured from the pivot and drawn parallel to the rod */
+.dim-line,.dim-tick{stroke:var(--draft)}
+.dim-label{fill:var(--draft);font-family:var(--f-mono);font-size:calc(var(--u,1) * 12px)}
+.dim-line.cw,.dim-tick.cw{stroke:var(--cw)}
+.dim-label.cw{fill:var(--cw)}
+.dim-line.acw,.dim-tick.acw{stroke:var(--acw)}
+.dim-label.acw{fill:var(--acw)}
+
+/* the stand's upward push, and the rod's own weight */
+.reaction-line{stroke:var(--level)}
+.reaction-head{fill:var(--level)}
+.reaction-label{fill:var(--level);font-family:var(--f-mono)}
+.rodw-line{stroke:var(--ink-faint)}
+.rodw-head{fill:var(--ink-faint)}
+.rodw-label{fill:var(--ink-faint)}
+.seg-span{stroke:var(--hanger);opacity:.5}
+.rod-cog{fill:var(--surface);stroke:var(--hanger)}
+.rod-cog-dot{fill:var(--hanger)}
+.rod-cog-label{
+  fill:var(--ink-faint);font-family:var(--f-mono);font-size:calc(var(--u,1) * 10.5px);
+}
+
+/* ======================= the working out ======================= */
+.dir-tag{
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.05em;padding:2px 8px;
+  border-radius:3px;white-space:nowrap;
+}
+.dir-tag.cw{background:var(--cw-wash);color:var(--cw)}
+.dir-tag.acw{background:var(--acw-wash);color:var(--acw)}
+.dir-tag.none,.dir-tag.idle{background:var(--rule-soft);color:var(--ink-faint)}
+td.moment{font-weight:600}
+
+/* the two columns the whole lab is about */
+.sum.acw{--tint:var(--acw);--tint-wash:var(--acw-wash)}
+.sum.cw{--tint:var(--cw);--tint-wash:var(--cw-wash)}
+
+/* ========================= the mass list ========================= */
+.mass-list{display:flex;flex-direction:column;gap:9px}
+.mass-row{
+  display:grid;grid-template-columns:auto 1fr auto;gap:9px 10px;align-items:center;
+  padding:11px 12px;border:1px solid var(--rule);border-radius:7px;background:var(--surface-sunk);
+}
+.mass-row .dot{width:10px;height:22px;border-radius:2px}
+.mass-row .row-title{
+  display:flex;align-items:baseline;gap:9px;min-width:0;flex-wrap:wrap;
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-faint);
+}
+.mass-row .newtons{
+  font-size:12px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:600;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.mass-row .fields{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.head-btns{display:flex;gap:6px}
+.row-btns{display:flex;align-items:center;gap:4px}
+.auto-btn{min-width:auto;padding:4px 8px}
+.mass-row.auto{border-color:var(--level);background:var(--level-wash)}
+.toggle.auto-btn.on{border-color:var(--level);background:var(--level);color:var(--surface)}
+.auto-note{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:0;text-transform:none;
+  color:var(--cw);white-space:normal;
+}
+.mass-row.idle{opacity:.62}
+.mass-row.idle .dot{filter:grayscale(1)}
+.mass-row .del{
+  border:none;background:transparent;color:var(--ink-faint);cursor:pointer;font-size:15px;
+  line-height:1;padding:3px 6px;border-radius:4px;
+}
+.mass-row .del:hover{color:var(--cw);background:var(--cw-wash)}
+
+@media (max-width:680px){
+  td.moment{padding-top:8px;margin-top:4px;border-top:1px solid var(--rule)}
+}
+@media (max-width:560px){
+  .mass-row .fields{grid-template-columns:1fr;gap:7px}
+  .mass-row .del{padding:7px 9px;font-size:17px}
+}
