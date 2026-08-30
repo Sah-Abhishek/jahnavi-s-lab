@@ -16,11 +16,12 @@ npm run preview    # serve the built files
 npm test           # check the physics headlessly — no browser needed
 ```
 
-`npm test` runs the suite in `test/`. It imports the lab's `engine.js` and
-`labState.js` directly and checks the physics against known results: the moments, and
-the centre-of-mass identity that makes the shortcut legal. It also generates a few
-hundred challenges and confirms every one is answerable, and feeds the saved-state
-reader deliberately corrupted storage.
+`npm test` runs the suites in `test/`. They import each lab's `engine.js` and
+`labState.js` directly and check the science against known results: moments and the
+centre-of-mass identity, and the simulated pendulum period
+against the elliptic-integral solution at half a dozen amplitudes. They also generate a few
+hundred challenges apiece and confirm every one is answerable, and feed each lab's
+saved-state reader deliberately corrupted storage.
 
 The app uses `HashRouter`, so `dist/` can be dropped on any static host — or opened
 straight off disk — without needing server rewrite rules.
@@ -47,6 +48,7 @@ src/
       ChallengePanel.jsx  challenge mode
       LearnPanel.jsx      the explanation
       lab.css             only what is this lab's own
+    simple-pendulum/      the same shape, a different experiment
 ```
 
 Every lab follows that shape. The rule that keeps them honest: **`engine.js` never
@@ -93,6 +95,13 @@ CGS units, an optional rod that has weight of its own (split at the pivot into t
 pieces, which is *why* the centre-of-mass shortcut works), a counterweight that solves
 for its own mass, and a beam that really swings: unbalanced, it goes over and meets
 the stand.
+
+**Simple Pendulum** — a bob obeying θ″ = −(g/L)·sin θ, integrated with RK4 rather than
+the small-angle shortcut, so the lab can time its own swings and catch T = 2π√(L/g)
+out. Hang a second pendulum beside the first to settle whether a heavier bob swings
+slower (it does not). The exact period comes from the elliptic integral K, by the
+arithmetic–geometric mean; at 45° the textbook formula is 4.0% fast, and the lab's
+own clock agrees to a fraction of a millisecond.
 
 ## Notes
 

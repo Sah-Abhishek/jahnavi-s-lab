@@ -37,12 +37,30 @@ export const LABS = [
     component: lazy(() => import('../labs/moment-of-force/MomentOfForceLab')),
   },
 
+  {
+    slug: 'simple-pendulum',
+    title: 'Simple Pendulum',
+    topic: 'Period, length and gravity',
+    subject: 'physics',
+    level: 'Class 8–10',
+    status: 'ready',
+    blurb: 'Swing a bob and find what its period really depends on — and what it does not.',
+    summary: 'A bob on a string that obeys the real equation of motion, not the textbook ' +
+             'shortcut — and a lab that times its own swings, so the famous formula always ' +
+             'has something to answer to. Hang two side by side to settle an argument.',
+    tags: ['oscillation', 'gravity', 'period', 'galileo', 'timekeeping', 'energy'],
+    teaches: [
+      'Why the mass of the bob makes no difference at all',
+      'Why four times the length gives only twice the period',
+      'Reading T = 2π√(L/g) backwards to design a clock',
+      'Where the small-angle approximation quietly stops being true',
+    ],
+    component: lazy(() => import('../labs/simple-pendulum/SimplePendulumLab')),
+  },
+
   /* ---------- the shelf ahead ----------
      Placeholders, marked so, so the catalogue shows where each subject is going.
      Delete an entry or give it a component and status:'ready' when its lab lands. */
-  { slug: 'simple-pendulum', title: 'Simple Pendulum', topic: 'Period, length and gravity',
-    subject: 'physics', level: 'Class 8–10', status: 'soon',
-    blurb: 'Swing a bob and find what its period really depends on — and what it does not.' },
   { slug: 'ohms-law', title: "Ohm's Law", topic: 'Current, voltage and resistance',
     subject: 'physics', level: 'Class 9–10', status: 'soon',
     blurb: 'Build a circuit, turn the dial, and watch V = I R hold.' },
