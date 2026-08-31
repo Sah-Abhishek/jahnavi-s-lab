@@ -103,6 +103,30 @@ export const LABS = [
     component: lazy(() => import('../labs/reflection/ReflectionLab')),
   },
 
+  {
+    slug: 'optics',
+    title: 'Light',
+    topic: 'Rays, mirrors and lenses',
+    subject: 'physics',
+    level: 'Class 8–12',
+    status: 'ready',
+    blurb: 'Trace the rays for real, and let the mirror formula answer for itself.',
+    summary: 'An optical bench with every ray traced rather than remembered — mirrors, ' +
+             'lenses, a prism and an eye. The mirror and lens formulas are not laws but ' +
+             'the paraxial limit of Snell and the law of reflection, so widen the mirror ' +
+             'and you can watch the approximation come apart.',
+    tags: ['light', 'reflection', 'refraction', 'mirrors', 'lenses', 'prism', 'snell',
+           'total internal reflection', 'dispersion', 'the eye', 'dioptres', 'ray diagram'],
+    teaches: [
+      'Reading the New Cartesian sign convention off the bench itself',
+      'Why a virtual image can never be caught on a screen',
+      'Where total internal reflection begins, and why it has to',
+      'Why the mirror and lens formulas differ by one sign',
+      'Where the paraxial approximation quietly stops being true',
+    ],
+    component: lazy(() => import('../labs/optics/OpticsLab')),
+  },
+
   /* ---------- the shelf ahead ----------
      Placeholders, marked so, so the catalogue shows where each subject is going.
      Delete an entry or give it a component and status:'ready' when its lab lands. */

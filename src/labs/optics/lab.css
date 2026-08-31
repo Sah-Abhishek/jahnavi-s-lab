@@ -1,0 +1,306 @@
+/* ============================================================
+   Light — what belongs to this lab alone.
+   The full-bleed stage, the floating panels, the graph paper and
+   all the challenge and learn furniture come from styles/.
+
+   Four inks, and they never swap roles: the object is draft blue,
+   its image is warm red, the glass and the mirror are green, and
+   the light itself is gold. Shape backs colour up — a real image
+   is a solid arrow with a solid head, a virtual one is dashed with
+   an open head — so real and virtual stay tellable apart without
+   relying on hue at all.
+   ============================================================ */
+:root{
+  --obj:var(--draft);       --obj-wash:var(--draft-wash);
+  --img:var(--cw);          --img-wash:var(--cw-wash);
+  --elem:var(--level);      --elem-wash:var(--level-wash);
+  --ray:#b0790c;            --ray-wash:#fbf1dc;
+  --glassfill:#7fb2c8;
+  --spec-violet:#7a3fc4; --spec-indigo:#4b46c9; --spec-blue:#1f6fd0;
+  --spec-green:#1c8a4a;  --spec-yellow:#b08a00; --spec-orange:#c96a12;
+  --spec-red:#c02f22;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ray:#f2c65c; --ray-wash:#332a12;
+    --glassfill:#8fc3da;
+    --spec-violet:#b98bf0; --spec-indigo:#8f8bf5; --spec-blue:#6cadf5;
+    --spec-green:#5cd396;  --spec-yellow:#efd166; --spec-orange:#f6a05c;
+    --spec-red:#f4796a;
+  }
+}
+:root[data-theme="dark"]{
+  --ray:#f2c65c; --ray-wash:#332a12;
+  --glassfill:#8fc3da;
+  --spec-violet:#b98bf0; --spec-indigo:#8f8bf5; --spec-blue:#6cadf5;
+  --spec-green:#5cd396;  --spec-yellow:#efd166; --spec-orange:#f6a05c;
+  --spec-red:#f4796a;
+}
+
+/* ---------------------- the bench ---------------------- */
+.optics-lab .grid-minor.across{opacity:.55}
+.principal .axis-line{
+  stroke:var(--ink-soft);stroke-width:1.4;
+  /* a centre line, drawn the way a drawing office draws one */
+  stroke-dasharray:22 5 3 5;opacity:.85;
+}
+.principal .ax-name{opacity:.75}
+.ax-num.origin{fill:var(--ink-soft);font-weight:600}
+
+/* ---------------------- the element ---------------------- */
+.element .silver{fill:none;stroke:var(--elem);stroke-width:3.2;stroke-linecap:round}
+.element .backing{
+  fill:none;stroke:var(--elem);stroke-width:9;opacity:.16;
+  transform:translateX(2px);
+}
+.element.mirror.convex .backing{transform:translateX(-2px)}
+.element .glass{fill:var(--glassfill);fill-opacity:.22;stroke:var(--elem);stroke-width:1.2}
+.element .lens-line{stroke:var(--elem);stroke-width:2.6;stroke-linecap:round}
+.element .lens-tip{fill:none;stroke:var(--elem);stroke-width:2.6;
+  stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------------------- arrows ---------------------- */
+.arrow line{stroke-width:2.6;stroke-linecap:round}
+.arrow path{stroke:none}
+.arrow.object line{stroke:var(--obj)}
+.arrow.object path{fill:var(--obj)}
+.arrow.image.real line{stroke:var(--img)}
+.arrow.image.real path{fill:var(--img)}
+.arrow.image.virtual line{stroke:var(--img);stroke-dasharray:6 4;opacity:.85}
+.arrow.image.virtual path{fill:none;stroke:var(--img);stroke-width:2.2;opacity:.85}
+.arrow-tag{
+  font-family:var(--f-mono);font-size:calc(var(--u,1) * 10.5px);
+  paint-order:stroke;stroke:var(--surface-sunk);
+  stroke-width:calc(var(--u,1) * 3px);stroke-linejoin:round;
+}
+.arrow.object .arrow-tag{fill:var(--obj)}
+.arrow.image .arrow-tag{fill:var(--img)}
+
+/* ---------------------- rays ---------------------- */
+.ray,.light-ray,.fan-ray{fill:none;stroke:var(--ray);stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.ray.virtual{stroke-dasharray:5 4;opacity:.5}
+/* A construction line is not light. It is what you would draw with a ruler to
+   find the image, and where the element is too small to catch it there is no ray
+   there at all — so it is drawn as pencil, in ink that is not the ink of light. */
+.ray.construct{stroke:var(--ink-faint);stroke-width:1.3;stroke-dasharray:7 5;opacity:.75}
+.cray.missed .ray{stroke:var(--ink-faint)}
+.reach-mark line{stroke:var(--elem);stroke-width:2;stroke-dasharray:4 4;opacity:.5}
+.reach-mark text{
+  fill:var(--ink-faint);font-family:var(--f-mono);font-size:calc(var(--u,1) * 10.5px);
+  paint-order:stroke;stroke:var(--surface-sunk);
+  stroke-width:calc(var(--u,1) * 3px);stroke-linejoin:round;
+}
+.fan-ray{stroke-width:1.2;opacity:.72}
+.cray .ray{stroke-width:1.9}
+.cray.parallel .ray{stroke:var(--ray)}
+.cray.focus .ray{stroke:var(--ray);opacity:.9}
+.cray.centre .ray{stroke:var(--ray);opacity:.8}
+.cray.pole .ray{stroke:var(--ray);opacity:.7}
+.light-ray.mono{stroke:var(--ray)}
+.light-ray.spec-violet{stroke:var(--spec-violet)}
+.light-ray.spec-indigo{stroke:var(--spec-indigo)}
+.light-ray.spec-blue{stroke:var(--spec-blue)}
+.light-ray.spec-green{stroke:var(--spec-green)}
+.light-ray.spec-yellow{stroke:var(--spec-yellow)}
+.light-ray.spec-orange{stroke:var(--spec-orange)}
+.light-ray.spec-red{stroke:var(--spec-red)}
+
+/* ---------------------- marks on the axis ---------------------- */
+.ax-mark line{stroke:var(--ink-faint);stroke-width:1.6}
+.ax-mark text{
+  fill:var(--ink-soft);font-family:var(--f-serif);font-style:italic;
+  font-size:calc(var(--u,1) * 12.5px);font-weight:600;
+  paint-order:stroke;stroke:var(--surface-sunk);
+  stroke-width:calc(var(--u,1) * 3px);stroke-linejoin:round;
+}
+.ax-mark.pole text{fill:var(--elem)}
+
+/* ---------------------- handles ---------------------- */
+.handle{cursor:grab;touch-action:none}
+/* a fingertip is not a mouse pointer: the invisible target grows on touch */
+@media (pointer:coarse){
+  .handle .grab{r:24}
+}
+/* a focal mark reads as something you can take hold of, not just a dot */
+.handle.focus-h .knob{stroke-dasharray:none}
+.handle.focus-h:hover .knob,.handle.focus-h:focus-visible .knob{fill:var(--elem-wash)}
+.handle .knob{fill:var(--surface);stroke:var(--ink-soft);stroke-width:2;opacity:.75}
+.handle:hover .knob,.handle:focus-visible .knob{opacity:1}
+.handle:focus{outline:none}
+.handle:hover .knob,.handle:focus-visible .knob{stroke-width:3.2}
+.handle.obj-foot .knob,.handle.obj-head .knob{stroke:var(--obj)}
+.handle.obj-foot:hover .knob,.handle.obj-head:hover .knob{fill:var(--obj-wash)}
+.handle.focus-h .knob,.handle.rim-h .knob{stroke:var(--elem)}
+.handle.focus-h:hover .knob,.handle.rim-h:hover .knob{fill:var(--elem-wash)}
+.handle.ray-h .knob{stroke:var(--ray)}
+.handle.ray-h:hover .knob{fill:var(--ray-wash)}
+#scene.dragging .handle{cursor:grabbing}
+#scene.locked .handle{cursor:default;opacity:.5}
+
+/* ---------------------- the screen ---------------------- */
+.screen{stroke:var(--ink-soft);stroke-width:3.4;stroke-linecap:round;opacity:.75}
+.screen-grab{stroke:transparent;stroke-width:20;cursor:ew-resize}
+.blur-spot{fill:var(--img);fill-opacity:.3;stroke:var(--img);stroke-width:.8;stroke-opacity:.5}
+.blur-spot.sharp{fill-opacity:.95;stroke-opacity:1}
+.screen-tag{
+  fill:var(--ink-faint);font-family:var(--f-mono);font-size:calc(var(--u,1) * 10px);
+}
+
+/* ---------------------- glass, and what it does ---------------------- */
+.glass-body{fill:var(--glassfill);fill-opacity:.2;stroke:var(--elem);stroke-width:1.4}
+.medium.far{fill:var(--glassfill);opacity:.13}
+.face{stroke:var(--elem);stroke-width:2.2}
+.normal{stroke:var(--ink-faint);stroke-width:1.2;stroke-dasharray:5 4;opacity:.85}
+.angle-arc path{fill:none;stroke:var(--ink-soft);stroke-width:1.3}
+.angle-arc text{
+  fill:var(--ink-soft);font-family:var(--f-mono);font-size:calc(var(--u,1) * 10.5px);
+  paint-order:stroke;stroke:var(--surface-sunk);
+  stroke-width:calc(var(--u,1) * 3px);stroke-linejoin:round;
+}
+.angle-arc.out path{stroke:var(--ray)}
+.angle-arc.out text{fill:var(--ray)}
+
+/* ---------------------- the eye ---------------------- */
+.eyeball .globe{fill:var(--surface);stroke:var(--ink-faint);stroke-width:1.6;opacity:.9}
+.eyeball .eye-lens{stroke:var(--elem);stroke-width:3;stroke-linecap:round}
+.eyeball .cornea{fill:none;stroke:var(--ink-soft);stroke-width:1.6;opacity:.7}
+.spectacle line{stroke:var(--elem);stroke-width:3;stroke-linecap:round}
+.spectacle.concave line{stroke-dasharray:none;opacity:.9}
+.focus-miss circle{fill:var(--img);stroke:var(--surface);stroke-width:1.4}
+.focus-miss text{
+  fill:var(--img);font-family:var(--f-mono);font-size:calc(var(--u,1) * 10.5px);
+  paint-order:stroke;stroke:var(--surface-sunk);
+  stroke-width:calc(var(--u,1) * 3px);stroke-linejoin:round;
+}
+.spec-tag,.far-tag,.note-line{
+  fill:var(--ink-soft);font-family:var(--f-mono);font-size:calc(var(--u,1) * 11px);
+}
+.note-line.second{fill:var(--ink-faint);font-size:calc(var(--u,1) * 10.5px)}
+
+/* ---------------------- notes at the edge ---------------------- */
+.edge-marker{cursor:pointer}
+.edge-marker rect{fill:var(--surface);stroke:var(--cw);stroke-width:1.2;opacity:.97}
+.edge-marker text{
+  fill:var(--cw);font-family:var(--f-mono);font-size:calc(var(--u,1) * 11.5px);
+}
+.edge-marker.at-focus rect{stroke:var(--draft)}
+.edge-marker.at-focus text{fill:var(--draft)}
+.held-note rect{stroke:var(--draft)}
+.held-note text{fill:var(--draft)}
+.miss-note rect{stroke:var(--ink-faint)}
+.miss-note text{fill:var(--ink-soft)}
+.tir-note rect{stroke:var(--ray)}
+.tir-note text{fill:var(--ray)}
+
+/* ---------------------- the working out ---------------------- */
+.owork{
+  margin-top:16px;padding-top:14px;border-top:1px solid var(--rule-soft);
+}
+.owork-head{
+  margin:0 0 10px;font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-faint);
+}
+.owork-list{margin:0;display:flex;flex-direction:column;gap:7px}
+.owork-row{display:grid;grid-template-columns:160px minmax(0,1fr);gap:14px;align-items:baseline}
+.owork-row dt{
+  font-family:var(--f-mono);font-size:11.5px;color:var(--ink-faint);text-align:right;
+}
+.owork-row dd{margin:0;font-size:13.5px;color:var(--ink)}
+.owork-row code{
+  font-family:var(--f-mono);font-size:13px;background:var(--surface-sunk);
+  border:1px solid var(--rule-soft);border-radius:5px;padding:1px 6px;
+}
+.optics-card .sum.tint-a{--tint:var(--obj);--tint-wash:var(--obj-wash)}
+.optics-card .sum.tint-b{--tint:var(--img);--tint-wash:var(--img-wash)}
+.optics-card table{min-width:520px}
+.optics-card tbody td b{color:var(--img)}
+/* this lab's last column is a sentence, not a number, so it must be allowed to
+   wrap — the shared panel rule keeps cells on one line, which suits a table of
+   coordinates and clips a table of explanations */
+.float-body .optics-card tbody td{white-space:normal}
+.float-body .optics-card tbody td:nth-child(2),
+.float-body .optics-card tbody td:nth-child(3){white-space:nowrap}
+.optics-card th:last-child,.optics-card td:last-child{min-width:16ch}
+
+/* ---------------------- the controls ---------------------- */
+/* the bench needs its middle, so the working out is given less of the height
+   here than the same panel takes over a graph */
+.optics-lab .float-panel.left{max-height:min(46%,430px);width:min(700px,54%)}
+
+.segmented.n2{grid-template-columns:repeat(2,1fr)}
+.segmented.n3{grid-template-columns:repeat(3,1fr)}
+/* four benches will not fit across a 396px panel and keep their sub-labels,
+   so they go two by two instead */
+.segmented.bench-grid{grid-template-columns:1fr 1fr}
+.presets .preset{flex:1 1 auto}
+.task-box .given{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
+.task-box .given-item{
+  font-family:var(--f-mono);font-size:12.5px;white-space:nowrap;
+  background:var(--surface-sunk);border:1px solid var(--rule-soft);
+  border-radius:5px;padding:2px 8px;
+}
+.task-box .given-item i{color:var(--ink-faint);font-style:italic}
+.task-box .given-item b{color:var(--ink);font-weight:600}
+.task-box .given .on-bench{
+  margin-left:auto;color:var(--ink-faint);font-style:italic;font-size:12px;
+}
+.answer-box .co-input{width:100%}
+.tabpanel.learn .rule{line-height:1.6}
+
+@media (max-width:680px){
+  .owork-row{grid-template-columns:1fr;gap:2px}
+  .owork-row dt{text-align:left}
+  .optics-card table{min-width:0}
+}
+@container (max-width:640px){
+  .float-body .owork-row{grid-template-columns:1fr;gap:2px}
+  .float-body .owork-row dt{text-align:left}
+}
+
+/* ============================================================
+   THE TWO GRAPHS THAT ARE REALLY EXPERIMENTS
+   ============================================================ */
+.inset{margin-top:18px;padding-top:15px;border-top:1px solid var(--rule-soft)}
+.inset-head{
+  margin:0 0 9px;font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-faint);
+}
+.inset-svg{
+  display:block;width:100%;max-width:420px;height:auto;
+  background:var(--surface-sunk);border:1px solid var(--rule-soft);border-radius:8px;
+}
+.inset-field{fill:none}
+.inset-grid{stroke:var(--grid-minor);stroke-width:1}
+.inset-zero{stroke:var(--ink-faint);stroke-width:1.2;opacity:.8}
+.inset-tick{fill:var(--ink-faint);font-family:var(--f-mono);font-size:9px}
+.inset-name{fill:var(--ink-soft);font-family:var(--f-serif);font-style:italic;font-size:11px}
+.inset-line{stroke:var(--draft);stroke-width:1.8;fill:none}
+.inset-line.curve{stroke:var(--ray);stroke-width:2}
+.inset-min{stroke:var(--ray);stroke-width:1;stroke-dasharray:4 3;opacity:.7}
+.inset-intercept{fill:var(--level);stroke:var(--surface);stroke-width:1.4}
+.inset-now{fill:var(--img);stroke:var(--surface);stroke-width:1.6}
+.inset-reading line{stroke:var(--ink-soft);stroke-width:1.6}
+.inset-tag{
+  fill:var(--ray);font-family:var(--f-mono);font-size:10px;
+  paint-order:stroke;stroke:var(--surface-sunk);stroke-width:3px;stroke-linejoin:round;
+}
+.inset-note{
+  margin:9px 0 10px;font-size:12.5px;line-height:1.6;color:var(--ink-soft);max-width:60ch;
+}
+.inset-note b{color:var(--ink);font-weight:600}
+.inset .task-actions{margin-top:2px}
+.inset .task-actions .btn{flex:0 0 auto}
+
+/* ---------------------- the six positions ---------------------- */
+.owork-head.spaced{margin-top:20px}
+.positions .row-go{
+  border:none;background:none;padding:0;cursor:pointer;color:var(--draft);
+  font:inherit;text-align:left;text-decoration:underline;text-underline-offset:3px;
+  text-decoration-color:var(--rule);
+}
+.positions .row-go:hover{text-decoration-color:var(--draft)}
+.positions .row-go:focus-visible{outline:2px solid var(--draft);outline-offset:2px;border-radius:3px}
+.positions tr.now{background:var(--draft-wash)}
+.positions tr.now .row-go{font-weight:600}
+.positions table{min-width:0}

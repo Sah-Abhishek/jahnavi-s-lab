@@ -3,12 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Jahnavi's Lab \u2014 interactive science and maths labs you can play with.",
+  "description": "Jahnavi's Lab — interactive science and maths labs you can play with.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test/moment-of-force.test.mjs && node test/simple-pendulum.test.mjs && node test/inheritance.test.mjs && node test/reflection.test.mjs"
+    "test": "node test/moment-of-force.test.mjs && node test/simple-pendulum.test.mjs && node test/inheritance.test.mjs && node test/reflection.test.mjs && node test/optics.test.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
