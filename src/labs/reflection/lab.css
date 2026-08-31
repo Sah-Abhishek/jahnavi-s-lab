@@ -1,0 +1,433 @@
+/* ============================================================
+   Reflection Lab — what belongs to this lab alone.
+   The layout, status bar, tabs, tables, challenge and learn
+   furniture all come from styles/lab-shell.css.
+
+   Three inks, and they never swap roles: the object is draft
+   blue, its image is warm red, and the mirror is green. Shape
+   backs up colour — the object is always a filled circle and the
+   image always a hollow square — so the two stay tellable apart
+   without relying on hue.
+   ============================================================ */
+:root{
+  --obj:var(--draft);
+  --obj-wash:var(--draft-wash);
+  --img:var(--cw);
+  --img-wash:var(--cw-wash);
+  --mir:var(--level);
+  --mir-wash:var(--level-wash);
+}
+
+/* ============================================================
+   THE PAGE
+   The graph gets the room. It fills the width and as much of the
+   height as the window can spare, and everything else floats over
+   it in panels that can be put away — so the working area is the
+   whole card rather than a square in the middle of one.
+   ============================================================ */
+.lab-layout.refl-lab{display:block}
+.lab-layout.refl-lab .stage-card{
+  display:flex;flex-direction:column;
+  height:min(calc(100vh - 132px),1100px);min-height:470px;
+}
+
+/* This lab is the one page on the site whose content really is the width of
+   the window, so it takes it — while the words above it stay at the reading
+   width they were set at. */
+.lab-page:has(.refl-lab){max-width:none;padding-inline:24px}
+.lab-page:has(.refl-lab) .crumbs,
+.lab-page:has(.refl-lab) .lab-head{max-width:1580px;margin-inline:auto}
+
+/* ---------------------- the whole screen ---------------------- */
+.lab-layout.refl-lab.immersive{
+  position:fixed;inset:0;z-index:80;margin:0;background:var(--paper);
+}
+.refl-lab.immersive .stage-card{
+  height:100%;max-height:none;min-height:0;border-radius:0;border:none;box-shadow:none;
+}
+.refl-lab .stage-head{flex:none}
+.refl-lab .hint{flex:none}
+.refl-lab .scene-wrap{position:relative;flex:1 1 auto;min-height:0}
+/* pinned to the box rather than sized by content: the drawing is told how big
+   to be by the measured box, and must never be able to change that box back */
+.refl-lab #scene{
+  position:absolute;inset:0;width:100%;height:100%;
+  touch-action:none;          /* dragging in two directions, so not a scroll surface */
+}
+.refl-lab #scene:focus-visible{outline:2px solid var(--draft);outline-offset:-2px}
+/* the paper itself can be taken hold of and pulled about */
+.refl-lab #scene.pannable{cursor:grab}
+.refl-lab #scene.panning{cursor:grabbing}
+.refl-lab #scene.panning *{cursor:grabbing}
+
+/* ---------------------- the view controls ---------------------- */
+.graph-tools{
+  position:absolute;top:12px;left:12px;z-index:3;
+  display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+}
+.tool-group{
+  display:flex;align-items:center;
+  border:1px solid var(--rule);border-radius:8px;overflow:hidden;
+  background:var(--surface);box-shadow:var(--shadow);
+}
+.tool{
+  border:none;background:transparent;cursor:pointer;color:var(--ink-soft);
+  font-family:var(--f-mono);font-size:15px;line-height:1;
+  padding:8px 11px;transition:background .15s,color .15s;
+}
+.tool-group .tool + .tool,.tool-group .zoom-read + .tool{border-left:1px solid var(--rule-soft)}
+.tool:hover:not(:disabled){background:var(--surface-sunk);color:var(--ink)}
+.tool:disabled{opacity:.35;cursor:not-allowed}
+.tool:focus-visible{outline:2px solid var(--draft);outline-offset:-2px}
+.tool.wide-tool{
+  font-size:12px;letter-spacing:.06em;padding:9px 13px;
+  border:1px solid var(--rule);border-radius:8px;
+  background:var(--surface);box-shadow:var(--shadow);
+}
+.tool-group .tool.wide-tool{border:none;border-radius:0;box-shadow:none}
+.tool.wide-tool.on{background:var(--draft);color:var(--surface);border-color:var(--draft)}
+.tool.wide-tool.on:hover{background:var(--draft);color:var(--surface);filter:brightness(1.08)}
+.zoom-read{
+  font-family:var(--f-mono);font-size:12px;color:var(--ink-faint);
+  padding:0 9px;min-width:44px;text-align:center;font-variant-numeric:tabular-nums;
+}
+
+/* ------------------- the panels over the graph ------------------- */
+.float-panel{
+  position:absolute;z-index:4;display:flex;flex-direction:column;
+  border:1px solid var(--rule);border-radius:12px;background:var(--surface);
+  box-shadow:var(--shadow-lift);overflow:hidden;
+}
+.float-panel[hidden]{display:none}
+.float-panel.right{top:12px;right:12px;width:min(396px,42%);max-height:calc(100% - 24px)}
+.float-panel.left{
+  left:12px;bottom:12px;width:min(760px,58%);max-height:min(60%,560px);
+}
+.float-head{
+  display:flex;align-items:center;gap:8px;flex:none;
+  padding:8px 8px 8px 12px;border-bottom:1px solid var(--rule);background:var(--surface-sunk);
+}
+.float-title{
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-faint);flex:1;min-width:0;
+}
+.float-head .tabs{flex:1;min-width:0;border:none;border-radius:6px}
+.float-head .tab{padding:8px 4px;font-size:11px}
+.float-close{
+  flex:none;border:1px solid var(--rule);border-radius:6px;background:var(--surface);
+  color:var(--ink-faint);cursor:pointer;font-size:12px;line-height:1;padding:6px 8px;
+}
+.float-close:hover{color:var(--ink);border-color:var(--draft)}
+.float-close:focus-visible{outline:2px solid var(--draft);outline-offset:1px}
+.float-body{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  /* the panel, not the window, is what the working out has to fit inside */
+  container-type:inline-size;
+}
+
+/* the panels supply their own frame, so the cards inside give theirs up */
+.float-body > .card{
+  border:none;border-radius:0;box-shadow:none;background:transparent;padding:15px;
+}
+.float-body .tabpanel{max-height:none;overflow:visible}
+.float-body .sheet-card h2{font-size:16px}
+/* a shade tighter than the full-page sheet, so the whole row of workings
+   fits the panel without being pushed onto a horizontal scroll */
+.float-body .sheet-card table{min-width:0;font-size:12.5px}
+.float-body .sheet-card thead th{padding:0 9px 8px;font-size:10px}
+.float-body .sheet-card tbody td{padding:8px 9px;font-size:12.5px;white-space:nowrap}
+.float-body .sheet-card td.obj{white-space:nowrap}
+.float-body .working code,.float-body .work-row dd{font-size:12.5px}
+
+/* Once the panel is narrower than the working out needs — a phone, or the
+   panel brought up from the bottom — the table becomes one card per row, the
+   same shape the sheet takes on a narrow page. */
+@container (max-width:640px){
+  .float-body .table-wrap{overflow-x:visible}
+  .float-body .sheet-card table{min-width:0}
+  .float-body .sheet-card thead{display:none}
+  .float-body .sheet-card tbody,
+  .float-body .sheet-card tr,
+  .float-body .sheet-card td{display:block}
+  .float-body .sheet-card tbody tr{
+    border:1px solid var(--rule);border-radius:7px;padding:9px 12px;margin-bottom:9px;
+    background:var(--surface-sunk);
+  }
+  .float-body .sheet-card tbody tr:last-child{margin-bottom:0}
+  .float-body .sheet-card tbody td{
+    display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+    padding:4px 0;border-bottom:none;text-align:right;white-space:normal;
+  }
+  .float-body .sheet-card tbody td::before{
+    content:attr(data-label);font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-faint);text-align:left;flex:0 0 auto;
+  }
+  .float-body td.obj{
+    justify-content:flex-start;text-align:left;padding-bottom:8px;margin-bottom:4px;
+    border-bottom:1px solid var(--rule);font-weight:600;
+  }
+  .float-body td.obj::before{content:none}
+  .float-body .sums{grid-template-columns:1fr;gap:8px}
+  .float-body .cmp{width:auto;height:24px;font-size:22px}
+  .float-body .work-row{grid-template-columns:1fr;gap:2px}
+  .float-body .work-row dt{text-align:left}
+}
+
+/* a mirror can be put where the graph does not reach; one that is simply
+   absent looks like a fault, so the drawing says what has happened */
+.offscreen-note rect{fill:var(--surface);stroke:var(--cw);stroke-width:1.2;opacity:.97}
+.offscreen-note text{
+  fill:var(--cw);font-family:var(--f-mono);font-size:calc(var(--u,1) * 12px);
+}
+
+/* ============================ the flat graph ============================ */
+.board{fill:var(--surface-sunk);stroke:var(--rule)}
+.board3{fill:var(--surface-sunk)}
+.grid-minor{stroke:var(--grid-minor);stroke-width:1}
+.grid-major{stroke:var(--grid-major);stroke-width:1.2}
+.axis{stroke:var(--ink-soft);stroke-width:1.5}
+.axis-head{fill:var(--ink-soft)}
+.ax-name{
+  fill:var(--ink-soft);font-family:var(--f-serif);font-style:italic;
+  font-size:calc(var(--u,1) * 13px);
+}
+.ax-num{
+  fill:var(--ink-faint);font-family:var(--f-mono);
+  font-size:calc(var(--u,1) * 9.5px);
+  /* the paper scrolls underneath them, so they carry their own background */
+  paint-order:stroke;stroke:var(--surface-sunk);
+  stroke-width:calc(var(--u,1) * 3px);stroke-linejoin:round;
+}
+
+/* ---------- the mirror ---------- */
+.mirror-line{stroke:var(--mir);stroke-width:2.6;stroke-linecap:round}
+.mirror-grab{
+  stroke:transparent;stroke-width:18;cursor:move;fill:none;
+}
+.mirror-grab:focus{outline:none}
+.mirror-grab:hover,.mirror-grab:focus-visible{stroke:var(--mir);stroke-opacity:.16}
+.mirror.locked .mirror-grab{cursor:default}
+.mirror-eq{
+  fill:var(--mir);font-family:var(--f-mono);font-weight:600;
+  font-size:calc(var(--u,1) * 11.5px);paint-order:stroke;
+  stroke:var(--surface-sunk);stroke-width:calc(var(--u,1) * 3.5px);stroke-linejoin:round;
+}
+.handle circle{fill:var(--surface);stroke:var(--mir);stroke-width:2.4}
+.handle:focus{outline:none}
+.handle:hover circle,.handle:focus-visible circle{fill:var(--mir-wash);stroke-width:3.4}
+
+/* ---------- the construction ---------- */
+.join{stroke:var(--ink-faint);stroke-width:1.4;stroke-dasharray:5 4;opacity:.85}
+.foot-mark{fill:var(--surface);stroke:var(--ink-soft);stroke-width:1.6}
+.eq-tick{stroke:var(--ink-soft);stroke-width:1.8;stroke-linecap:round}
+.dist-label{
+  fill:var(--ink-faint);font-family:var(--f-mono);font-size:calc(var(--u,1) * 9.5px);
+  paint-order:stroke;stroke:var(--surface-sunk);stroke-width:calc(var(--u,1) * 3px);
+}
+
+/* ---------- object and image ---------- */
+.shape{stroke-width:1.8;fill-opacity:.13}
+.shape.obj{fill:var(--obj);stroke:var(--obj)}
+.shape.img{fill:var(--img);stroke:var(--img);stroke-dasharray:6 4}
+.vtx.obj circle{fill:var(--obj);stroke:var(--surface);stroke-width:2}
+.vtx.img rect{fill:var(--surface);stroke:var(--img);stroke-width:2.6}
+.vtx-label{
+  font-family:var(--f-mono);font-size:calc(var(--u,1) * 11px);font-weight:600;
+  paint-order:stroke;stroke:var(--surface-sunk);
+  stroke-width:calc(var(--u,1) * 3.5px);stroke-linejoin:round;
+}
+.vtx.obj .vtx-label{fill:var(--obj)}
+.vtx.img .vtx-label{fill:var(--img)}
+.grabbable{cursor:grab}
+#scene.dragging .grabbable{cursor:grabbing}
+.vtx.obj:focus{outline:none}
+.vtx.obj:hover circle,.vtx.obj:focus-visible circle{stroke:var(--ink);stroke-width:3}
+
+/* ---------- where a challenge wants the image ---------- */
+.target-ring{
+  fill:none;stroke:var(--img);stroke-width:2;stroke-dasharray:4 3;opacity:.9;
+}
+.target-dot{fill:var(--img)}
+.target-label{
+  fill:var(--img);font-family:var(--f-mono);font-size:calc(var(--u,1) * 10px);
+  paint-order:stroke;stroke:var(--surface-sunk);stroke-width:calc(var(--u,1) * 3px);
+}
+
+/* ============================ space ============================ */
+.cube-edge{stroke:var(--grid-major);stroke-width:1;opacity:.55}
+.axis3 line{stroke:var(--ink-soft);stroke-width:1.4}
+.axis3 polygon{fill:var(--ink-soft)}
+.axis3 .ax-tick{fill:var(--ink-faint)}
+.axis3 .ax-name{fill:var(--ink-soft)}
+.plane-face{fill:var(--mir);fill-opacity:.15}
+.plane-edge{fill:none;stroke:var(--mir);stroke-width:2.2;stroke-linejoin:round}
+.mirror3 .axis-line{stroke:var(--mir);stroke-width:3;stroke-linecap:round}
+.normal3 line{stroke:var(--mir);stroke-width:1.8}
+.normal3 polygon{fill:var(--mir)}
+.normal-label{
+  fill:var(--mir);font-family:var(--f-serif);font-style:italic;font-weight:600;
+  font-size:calc(var(--u,1) * 12px);
+}
+
+/* ======================= the working out ======================= */
+.obj-swatch{background:var(--obj)}
+.refl-card .mirror-figure{font-size:15px}
+.sum.tint-obj{--tint:var(--obj);--tint-wash:var(--obj-wash)}
+.sum.tint-img{--tint:var(--img);--tint-wash:var(--img-wash)}
+.refl-card tbody td b{color:var(--img)}
+.refl-card table{min-width:640px}
+
+.working{
+  margin-top:18px;padding:15px;border-radius:7px;
+  background:var(--surface-sunk);border:1px solid var(--rule);
+}
+.working-head{
+  display:block;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-faint);margin-bottom:11px;
+}
+.work-list{margin:0;display:flex;flex-direction:column;gap:7px}
+.work-row{display:grid;grid-template-columns:170px minmax(0,1fr);gap:14px;align-items:baseline}
+.work-row dt{
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);
+  text-align:right;
+}
+.work-row dd{
+  margin:0;font-family:var(--f-mono);font-size:13.5px;color:var(--ink);
+  font-variant-numeric:tabular-nums;overflow-wrap:anywhere;
+}
+.working-note{margin:13px 0 0;font-size:13px;color:var(--ink-soft);max-width:62ch}
+
+/* ========================== the controls ========================== */
+/* the site's own segmented control, in the widths this lab needs */
+.segmented.n2{grid-template-columns:repeat(2,1fr)}
+.segmented.n3{grid-template-columns:repeat(3,1fr)}
+
+/* ---------- writing an equation ---------- */
+.eqfield{margin-top:10px}
+.eq-input{
+  width:100%;box-sizing:border-box;padding:11px 13px;border-radius:7px;
+  border:1px solid var(--rule);background:var(--surface);color:var(--ink);
+  font-family:var(--f-mono);font-size:15px;letter-spacing:.01em;
+}
+.eq-input:focus{outline:none;border-color:var(--mir);box-shadow:0 0 0 3px var(--mir-wash)}
+.eq-input:disabled{opacity:.5;cursor:not-allowed}
+.eqfield.bad .eq-input{border-color:var(--cw)}
+.eqfield.bad .eq-input:focus{box-shadow:0 0 0 3px var(--cw-wash)}
+.eq-ok,.eq-error{margin:6px 0 0;font-size:12px;line-height:1.45}
+.eq-ok{color:var(--ink-faint)}
+.eq-error{color:var(--cw)}
+.eq-alt{
+  margin:8px 0 0;font-size:12.5px;color:var(--ink-faint);
+}
+.eq-alt code,.tabpanel .micro code{
+  font-family:var(--f-mono);font-size:12px;background:var(--surface-sunk);
+  border:1px solid var(--rule-soft);border-radius:4px;padding:1px 5px;color:var(--ink-soft);
+}
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+
+/* ---------- a vertex, as numbers ---------- */
+.vertex-block{
+  margin-top:10px;padding:12px 13px;border:1px solid var(--rule);border-radius:8px;
+  background:var(--surface-sunk);border-left:3px solid var(--obj);
+}
+.vertex-head{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.vertex-head .dot{width:10px;height:20px;border-radius:2px;flex:none}
+.vertex-title{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-soft);flex:1;min-width:0;
+}
+.vertex-co{
+  font-family:var(--f-mono);font-size:12.5px;font-weight:600;color:var(--ink);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.co-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.co-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.co-grid + .co-grid{margin-top:8px}
+.co-cell{display:flex;flex-direction:column;gap:4px;min-width:0}
+.co-cell.wide{margin-top:8px}
+.co-name{
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-faint);
+}
+.row-head.spaced{margin-top:16px}
+
+/* ---------- answering a challenge ---------- */
+.answer-box{
+  padding:13px;border:1px solid var(--rule);border-radius:8px;
+  background:var(--surface-sunk);margin-bottom:14px;
+}
+.answer-box .label{display:block;margin-bottom:9px}
+.co-input{
+  width:100%;box-sizing:border-box;padding:9px 10px;border-radius:6px;
+  border:1px solid var(--rule);background:var(--surface);color:var(--ink);
+  font-family:var(--f-mono);font-size:15px;font-variant-numeric:tabular-nums;text-align:center;
+}
+.co-input:focus{outline:none;border-color:var(--draft);box-shadow:0 0 0 3px var(--draft-wash)}
+.co-input:disabled{opacity:.55}
+.drawn-now{margin:0;font-family:var(--f-mono);font-size:13.5px;color:var(--ink)}
+.drawn-now strong{color:var(--mir)}
+.drawn-lands{display:block;color:var(--ink-faint);font-size:12.5px;margin-top:3px}
+
+.preset{display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.preset-ask{font-size:11.5px;color:var(--ink-faint);font-weight:400}
+.chk.spaced{margin-top:12px}
+
+/* ============================ learn ============================ */
+.mirror-table{margin-top:6px}
+/* the panel is narrow: the mirror itself must never wrap mid-equation */
+.mirror-table td:first-child,.mirror-table td:nth-child(2){white-space:nowrap}
+.mirror-table td,.mirror-table th{padding-left:0;padding-right:9px}
+.tabpanel.learn table{width:100%;border-collapse:collapse;min-width:0}
+.tabpanel.learn thead th{
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-faint);font-weight:500;text-align:left;padding:0 10px 8px;
+  border-bottom:1px solid var(--ink-soft);
+}
+.tabpanel.learn tbody td{
+  padding:8px 10px;border-bottom:1px solid var(--rule-soft);font-size:13px;
+  font-family:var(--f-mono);color:var(--ink-soft);
+}
+.tabpanel.learn tbody td b{color:var(--mir);font-weight:600}
+.tabpanel.learn tbody tr:last-child td{border-bottom:none}
+.tabpanel.learn code{
+  font-family:var(--f-mono);font-size:12.5px;background:var(--surface-sunk);
+  border:1px solid var(--rule-soft);border-radius:4px;padding:1px 5px;color:var(--ink);
+}
+.tabpanel.learn .example .step code{background:none;border:none;padding:0}
+
+/* ============================================================
+   NARROW
+   Below about a tablet there is no room to float anything beside
+   the graph, so the panels come up from the bottom instead — the
+   graph keeps the screen, and a panel covers it only while it is
+   being used.
+   ============================================================ */
+@media (max-width:900px){
+  .lab-page:has(.refl-lab){padding-inline:12px}
+  .float-panel.right,.float-panel.left{
+    position:fixed;left:0;right:0;bottom:0;top:auto;
+    width:auto;max-height:min(70vh,560px);
+    border-radius:14px 14px 0 0;border-bottom:none;
+    z-index:20;
+  }
+  .graph-tools{gap:5px;top:10px;left:10px}
+  .tool.wide-tool{padding:8px 10px;font-size:11px}
+}
+@media (max-width:680px){
+  .lab-layout.refl-lab .stage-card{height:min(calc(100vh - 118px),820px);min-height:400px}
+  .work-row{grid-template-columns:1fr;gap:2px}
+  .work-row dt{text-align:left}
+  .refl-card table{min-width:0}
+}
+@media (max-width:560px){
+  .co-grid.three{grid-template-columns:1fr 1fr}
+  .eq-input{font-size:14px}
+  .zoom-read{min-width:38px;padding:0 6px}
+  .tool{padding:8px 9px}
+}
+/* a phone on its side has width but almost no height */
+@media (orientation:landscape) and (max-height:620px){
+  .lab-layout.refl-lab .stage-card{height:calc(100dvh - 74px);min-height:280px}
+  .float-panel.right,.float-panel.left{top:8px;bottom:8px;max-height:none}
+  .float-panel.left{width:min(520px,48%)}
+}

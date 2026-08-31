@@ -22,9 +22,13 @@ centre-of-mass identity; the simulated pendulum period against the elliptic-inte
 solution at half a dozen amplitudes; every Punnett square the inheritance lab can
 build, plus Mendel's own 556 seeds coming out at χ² = 0.470 and the structural laws
 sex linkage has to obey — no YY 'person', exactly half of every square sons, and every
-son's X coming from his mother. They also generate a few
-hundred challenges apiece and confirm every one is answerable, and feed each lab's
-saved-state reader deliberately corrupted storage.
+son's X coming from his mother. Reflection is checked against its definition rather
+than a table of answers — over every point and mirror in the suite, reflecting twice
+returns the start, the foot is the midpoint and lies on the mirror, and the join meets
+it at right angles — and the claim that a mirror plane and a half-turn about a line are
+different things is settled by the determinant of each: −1 for the plane, +1 for the
+line. They also generate a few hundred challenges apiece and confirm every one is
+answerable, and feed each lab's saved-state reader deliberately corrupted storage.
 
 The app uses `HashRouter`, so `dist/` can be dropped on any static host — or opened
 straight off disk — without needing server rewrite rules.
@@ -53,7 +57,43 @@ src/
       lab.css             only what is this lab's own
     simple-pendulum/      the same shape, a different experiment
     inheritance/          and again
+    reflection/           and again, with a second scene for three dimensions
+      Scene.jsx             the flat graph
+      Scene3D.jsx           the same lab, seen in space
+      EquationField.jsx     the box a mirror can be written into
 ```
+
+Reflection lays its page out differently from the other three. The graph takes the
+whole width and as much height as the window can spare, the panels float over it and
+can be put away, and **Full screen** hands it the entire display. Both scenes are drawn
+in real pixels — the viewBox is the measured size of the box they are given — which
+lets the graph take whatever shape the window has: the scale is set by the shorter
+side, so a unit across stays a unit up and a wide screen simply shows more of x. The
+drawing centres itself on the part of the box no panel is over, so opening a panel
+never strands the space opposite it.
+
+The graph is a window on the plane rather than a frame around it: it has a centre it
+is looking at and a reach, and both move freely. Drag the paper or scroll to travel,
+pinch or ctrl+scroll to zoom towards the pointer, and neither runs out — there are
+eight orders of magnitude between the two ends of the zoom, and the graph paper
+regenerates for wherever you have arrived on squares of 1, 2 or 5 times a power of ten,
+so the count of lines drawn stays about the same however far out you go. The wheel
+belongs to the graph outright and never moves the page behind it, including the
+ctrl+wheel a trackpad pinch sends, which the browser would otherwise use to zoom the
+whole website.
+
+In space the three axes are drawn as far as the drawing goes rather than only as far
+as the axes box, so scrolling away from the middle still leaves something to steer by —
+each one numbered, and coarsened onto tidy steps as the view widens. Travel far enough
+and no axis crosses the view at all, which is a blank screen with no way of telling
+which way is back; the drawing says so, and names the way home.
+
+Moving about is a change of view and nothing else: nothing on the graph moves with you,
+so a point that leaves the window is exactly where you left it, and **Reset view** comes
+back to the origin without touching the maths. The mirror is stored as the line itself
+rather than as two points on the screen — the two ends you drag are worked out at
+drawing time from where the line crosses the window, so they are always somewhere you
+can reach however far the graph has been scrolled.
 
 Every lab follows that shape. The rule that keeps them honest: **`engine.js` never
 touches the DOM**, so the physics can be run and checked headlessly, and the React

@@ -79,6 +79,30 @@ export const LABS = [
     component: lazy(() => import('../labs/inheritance/InheritanceLab')),
   },
 
+  {
+    slug: 'reflection',
+    title: 'Reflection',
+    topic: 'Mirror lines, and mirror planes',
+    subject: 'maths',
+    level: 'Class 8–12',
+    status: 'ready',
+    blurb: 'Write the mirror down or draw it on the graph — the image finds its own place.',
+    summary: 'A point, or a whole shape, held up to a mirror you can define either way: ' +
+             'type y = 2x + 1 and the mirror moves onto it, or drag the mirror across the ' +
+             'graph and the equation rewrites itself. Then the same thing in space, where ' +
+             'the mirror is a plane — and a line, which turns out not to be a mirror at all.',
+    tags: ['reflection', 'coordinate geometry', 'symmetry', 'transformations',
+           'perpendicular bisector', '3d geometry', 'vectors'],
+    teaches: [
+      'Why the mirror is the perpendicular bisector of the join',
+      'Reflecting in any line, not just the friendly ones',
+      'Reading a mirror off a graph and writing it as an equation',
+      'How a mirror plane in space is the very same formula',
+      'Why turning about a line in space is not a reflection at all',
+    ],
+    component: lazy(() => import('../labs/reflection/ReflectionLab')),
+  },
+
   /* ---------- the shelf ahead ----------
      Placeholders, marked so, so the catalogue shows where each subject is going.
      Delete an entry or give it a component and status:'ready' when its lab lands. */
