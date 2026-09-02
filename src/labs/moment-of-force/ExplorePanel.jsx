@@ -8,7 +8,7 @@ import Listbox from '../../components/Listbox';
 import {
   UNITS, GRAVITIES, PRESETS, MAX_MASSES,
   U, RL, LEN_MIN, LEN_MAX, MASS_MIN, MASS_MAX,
-  niceStep, snapStep, posDp, fmt, kgOf,
+  niceStep, snapStep, posDp, toDp, relOf, absOf, fmt, kgOf,
 } from './engine';
 
 /* ---------- one mass's row: colour, weight, auto/on/off, then its two fields ---------- */
@@ -52,12 +52,15 @@ function MassRow({ s, mass, index, editable, dispatch }) {
                  disabled={!editable || !!mass.auto}   /* a balancer is solved for, not typed */
                  format={(v) => (mass.auto ? kgOf(v) : String(v))}
                  onChange={(v) => dispatch({ type: 'massValue', id: mass.id, value: v })} />
+        {/* the mark the rod carries under this mass: 0 at the pivot, - to the left */}
         <Stepper mini
-                 value={mass.x} min={0} max={RL(s)} step={snapStep(s)}
+                 value={toDp(s, relOf(s, mass.x))}
+                 min={toDp(s, -s.fulcrum)} max={toDp(s, RL(s) - s.fulcrum)}
+                 step={snapStep(s)}
                  unit={u.len} less="Move left" more="Move right"
                  disabled={!editable}
                  format={(v) => v.toFixed(dp)}
-                 onChange={(v) => dispatch({ type: 'massPos', id: mass.id, value: v })} />
+                 onChange={(v) => dispatch({ type: 'massPos', id: mass.id, value: absOf(s, v) })} />
       </div>
     </div>
   );
@@ -121,7 +124,10 @@ export default function ExplorePanel({ state: s, dispatch }) {
       </section>
 
       <section className="ctrl-block">
-        <div className="row-head"><label htmlFor="fulcrumInput">Fulcrum position</label></div>
+        <div className="row-head">
+          <label htmlFor="fulcrumInput">Fulcrum position</label>
+          <span className="head-note">from the left-hand end</span>
+        </div>
         <Stepper id="fulcrumInput"
                  value={s.fulcrum} min={0} max={RL(s)} step={snapStep(s)} unit={u.len}
                  less="Move pivot left" more="Move pivot right" disabled={!editable}
@@ -132,6 +138,9 @@ export default function ExplorePanel({ state: s, dispatch }) {
                aria-label="Fulcrum position"
                onChange={(e) => dispatch({ type: 'fulcrum', value: parseFloat(e.target.value) })} />
         <div className="range-legend"><span>left end</span><span>centre</span><span>right end</span></div>
+        <p className="micro">The pivot is the rod's <strong>zero</strong>. Slide it and the
+          markings slide with it, so the number under a mass is always its distance from the
+          pivot — negative to the left, positive to the right.</p>
       </section>
 
       <section className="ctrl-block">
@@ -159,9 +168,10 @@ export default function ExplorePanel({ state: s, dispatch }) {
           must grow, outward and it shrinks. Press <strong>Auto</strong> on any mass to hand it
           the job.</p>
         <p className="micro">Type any mass from {kgOf(MASS_MIN(s))} to {kgOf(MASS_MAX(s))} {u.mass},
-          and any position on the rod. Switch a mass <strong>off</strong> to lift it clear without
-          losing it — its moment stops counting, but it keeps its place so you can switch it
-          back on.</p>
+          and any mark on the rod — from {(-s.fulcrum).toFixed(dp)} to{' '}
+          {(RL(s) - s.fulcrum).toFixed(dp)} {u.len}. Switch a mass <strong>off</strong> to lift it
+          clear without losing it — its moment stops counting, but it keeps its place so you can
+          switch it back on.</p>
       </section>
 
       <section className="ctrl-block">

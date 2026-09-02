@@ -27,14 +27,18 @@ export default function LearnPanel({ state: s }) {
 
       <h3>The pivot</h3>
       <p>The fulcrum is the point the rod turns about, and <em>every distance is measured from
-        it</em>. Slide the pivot in the diagram: nothing else moves, yet every distance — and
-        so every moment — changes.</p>
+        it</em> — which is why the rod is marked <strong>0</strong> where it sits, counting
+        negative to the left and positive to the right. Slide the pivot in the diagram: no mass
+        moves, yet the markings travel with the pivot, so every distance — and so every
+        moment — changes.</p>
 
       <h3>The principle of moments</h3>
       <p>A rod that balances obeys one neat rule:</p>
       <div className="rule">total clockwise moments = total anticlockwise moments</div>
       <p>So a small weight far from the pivot balances a large weight close to it. That is
-        exactly why a small child can seesaw with an adult — the child just sits further back.</p>
+        exactly why a small child can seesaw with an adult — the child just sits further back.
+        It is also what holds up every tower crane on the skyline: the <strong>Real world</strong> tab
+        builds one and walks you round it.</p>
 
       <h3>A rod that weighs something</h3>
       <p>A rod is not a point — it is spread out, so every centimetre of it pulls down. Put the

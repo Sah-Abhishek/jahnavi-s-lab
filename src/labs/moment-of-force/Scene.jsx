@@ -8,7 +8,8 @@
 import { useCallback, useRef } from 'react';
 import {
   DIVS, U, RL, ppm, pivotX, toWorld, getItems,
-  niceStep, snapStep, posDp, tickDp, snapPos, fmt, kgOf, clamp,
+  niceStep, snapStep, posDp, tickDp, snapPos, snapOnRod, relOf, absOf, fmtRel, sayRel,
+  fmt, kgOf, clamp,
 } from './engine';
 
 /* ---------- one force arrow, pointing down ---------- */
@@ -62,12 +63,11 @@ function HangingMass({ s, P, it, rad, onGrab, onNudge }) {
   const cx = anchor[0];
   const fs = Math.max(9.5, size * 0.31);
   const hitW = Math.max(size + P.hitPad, P.hitPad * 2);
-  const dp = posDp(s);
 
   return (
     <g className={`mass-grp${it.locked ? ' locked' : ''}${it.active ? '' : ' off'}`}
        tabIndex={0} role="button"
-       aria-label={`${it.m} ${U(s).mass} mass at ${it.x.toFixed(dp)} ${U(s).lenWord}` +
+       aria-label={`${it.m} ${U(s).mass} mass, ${sayRel(s, it.dSigned)}` +
                    (it.active ? '' : ', switched off')}
        onPointerDown={(e) => onGrab(e, it)}
        onKeyDown={(e) => onNudge(e, it)}>
@@ -81,7 +81,7 @@ function HangingMass({ s, P, it, rad, onGrab, onNudge }) {
             fill={it.color} strokeWidth="2" filter="url(#softShadow)" />
       <text className="mbox-label" x={cx} y={top + size / 2 + fs * 0.36}
             textAnchor="middle" fontSize={fs.toFixed(1)} fontWeight="500"
-            pointerEvents="none">{it.m}</text>
+            pointerEvents="none">{kgOf(it.m)}</text>
       <text className="mass-cap" x={cx} y={top + size + 13} textAnchor="middle"
             pointerEvents="none">
         {kgOf(it.m)} {U(s).mass}{it.active ? '' : ' · off'}{it.auto ? ' · auto' : ''}
@@ -106,6 +106,8 @@ export default function Scene({ state: s, profile: P, angle, unitsPerPx, dispatc
   const step = niceStep(s);
   const scale = ppm(s, P);
   const editable = s.mode !== 'challenge';
+  const crane = s.tab === 'world';             // the Real world tab dresses it as a tower crane
+  const compact = P.name === 'compact';
 
   /* ---------- pointer ---------- */
   const svgPoint = useCallback((evt) => {
@@ -142,7 +144,7 @@ export default function Scene({ state: s, profile: P, angle, unitsPerPx, dispatc
   const onMove = (e) => {
     if (!drag.current) return;
     if (drag.current.kind === 'mass') {
-      dispatch({ type: 'massPos', id: drag.current.id, value: snapPos(s, pointerToRodPos(e)) });
+      dispatch({ type: 'massPos', id: drag.current.id, value: snapOnRod(s, pointerToRodPos(e)) });
     } else {
       const p = svgPoint(e);
       dispatch({ type: 'fulcrum', value: clamp(snapPos(s, (p.x - P.X0) / scale), 0, RL(s)) });
@@ -163,42 +165,62 @@ export default function Scene({ state: s, profile: P, angle, unitsPerPx, dispatc
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     if (it && it.locked) return;
     /* always the coarse grid, snap or not: arrow keys are for stepping, not nudging */
-    const delta = snapStep(s) * (e.shiftKey ? 4 : 1) * (e.key === 'ArrowRight' ? 1 : -1);
+    const st = snapStep(s);
+    const delta = st * (e.shiftKey ? 4 : 1) * (e.key === 'ArrowRight' ? 1 : -1);
     e.preventDefault();
-    if (it) dispatch({ type: 'massPos', id: it.id, value: clamp(it.x + delta, 0, RL(s)) });
-    else if (editable) dispatch({ type: 'fulcrum', value: clamp(s.fulcrum + delta, 0, RL(s)) });
+    if (it) {
+      /* step along the marks the rod carries, so a stepped mass lands on one */
+      const rel = Math.round((relOf(s, it.x) + delta) / st) * st;
+      dispatch({ type: 'massPos', id: it.id, value: clamp(absOf(s, rel), 0, RL(s)) });
+    } else if (editable) {
+      dispatch({ type: 'fulcrum', value: clamp(s.fulcrum + delta, 0, RL(s)) });
+    }
   };
 
-  /* ---------- the rod's numbered marks ---------- */
+  /* ---------- the rod's numbered marks, counted from the pivot ----------
+     The pivot carries the zero, so the marks are laid out from it and travel
+     with it: the left-hand end of the rod reads -fulcrum, the right-hand end
+     reads (length - fulcrum), and a mass's mark IS its distance from the pivot. */
   const ticks = [];
   const half = step / 2;
-  let lastLabel = -Infinity;
-  for (let i = 0; i * half <= RL(s) + 1e-9; i++) {
-    const v = i * half;
-    const x = P.X0 + v * scale;
-    const major = i % 2 === 0;
+  const leftEnd = -s.fulcrum, rightEnd = RL(s) - s.fulcrum;
+  const mark = (key, x, major, label, zero) => {
     ticks.push(
-      <line key={`t${i}`} className="tick" x1={x} y1={P.ROD_Y - P.ROD_H} x2={x}
+      <line key={`t${key}`} className={`tick${zero ? ' zero' : ''}`}
+            x1={x} y1={P.ROD_Y - P.ROD_H} x2={x}
             y2={P.ROD_Y - P.ROD_H + (major ? 7 : 4)}
-            strokeWidth={major ? 1.3 : 1} opacity={major ? 0.85 : 0.45} />
+            strokeWidth={zero ? 1.8 : (major ? 1.3 : 1)}
+            opacity={zero ? 1 : (major ? 0.85 : 0.45)} />
     );
-    if (major) {
+    if (label !== undefined) {
       ticks.push(
-        <text key={`l${i}`} className="tick-label" x={x} y={P.ROD_Y - P.ROD_H - 5}
-              textAnchor="middle">{v.toFixed(tickDp(s))}</text>
+        <text key={`l${key}`} className={`tick-label${zero ? ' zero' : ''}`}
+              x={x} y={P.ROD_Y - P.ROD_H - 5} textAnchor="middle">{label}</text>
       );
-      lastLabel = v;
+    }
+  };
+
+  let firstLabel = Infinity, lastLabel = -Infinity;
+  for (let k = Math.ceil(leftEnd / half - 1e-9); k * half <= rightEnd + 1e-9; k++) {
+    const rel = k * half;
+    const major = k % 2 === 0;
+    mark(String(k), px + rel * scale, major,
+         major ? fmtRel(s, rel, tickDp(s)) : undefined, k === 0);
+    if (major) {
+      firstLabel = Math.min(firstLabel, rel);
+      lastLabel = Math.max(lastLabel, rel);
     }
   }
-  /* a custom length rarely ends on a mark, so label the far end too */
-  if (RL(s) - lastLabel > step * 0.35) {
-    const x = P.X0 + RL(s) * scale;
-    ticks.push(
-      <line key="tend" className="tick" x1={x} y1={P.ROD_Y - P.ROD_H} x2={x}
-            y2={P.ROD_Y - P.ROD_H + 7} strokeWidth="1.3" opacity="0.85" />,
-      <text key="lend" className="tick-label" x={x} y={P.ROD_Y - P.ROD_H - 5}
-            textAnchor="middle">{RL(s).toFixed(dp)}</text>
-    );
+  /* Neither end of the rod need land on a mark now that the pivot sets them out, so
+     each end is numbered too — but an end reading is a long one ("-2.35" beside "-2"),
+     so it is only drawn where it stands clear of the last numbered mark. The compact
+     drawing sets its type proportionally larger, and needs most of a step. */
+  const endRoom = step * (P.name === 'compact' ? 0.9 : 0.55);
+  if (firstLabel - leftEnd > endRoom) {
+    mark('L', px + leftEnd * scale, true, fmtRel(s, leftEnd, dp));
+  }
+  if (rightEnd - lastLabel > endRoom) {
+    mark('R', px + rightEnd * scale, true, fmtRel(s, rightEnd, dp));
   }
 
   /* ---------- graph paper, with its major lines on the rod's marks ---------- */
@@ -207,16 +229,84 @@ export default function Scene({ state: s, profile: P, angle, unitsPerPx, dispatc
   const minorD = `M${q} 0V${cell}M${2 * q} 0V${cell}M${3 * q} 0V${cell}` +
                  `M0 ${q}H${cell}M0 ${2 * q}H${cell}M0 ${3 * q}H${cell}`;
 
-  /* ---------- the wedge and its bench ---------- */
-  const half2 = P.name === 'compact' ? 20 : 26;
+  /* ---------- the stand: a wedge on a bench, or a lattice tower on a roof ---------- */
+  const half2 = compact ? 20 : 26;
   const base = P.PLATE;
   const bw = half2 * 2.7;
   const hatches = [];
-  for (let x = px - bw + 4; x < px + bw; x += 11) {
-    hatches.push(
-      <line key={`h${x.toFixed(1)}`} className="ground-hatch" x1={x} y1={base + 10}
-            x2={x - 6} y2={base + 16} strokeWidth="1" opacity="0.3" />
+  if (!crane) {
+    for (let x = px - bw + 4; x < px + bw; x += 11) {
+      hatches.push(
+        <line key={`h${x.toFixed(1)}`} className="ground-hatch" x1={x} y1={base + 10}
+              x2={x - 6} y2={base + 16} strokeWidth="1" opacity="0.3" />
+      );
+    }
+  }
+
+  /* The crane's furniture. The physics never changes with the costume: the tower IS
+     the fulcrum, the jib IS the rod, and a trolley-and-hook is a hanging mass. */
+  const towerTop = P.ROD_Y + P.ROD_H + 3;
+  const tw = compact ? 9 : 13;                 // half-width of the tower
+  const towerWeb = [];
+  const bldgWins = [];
+  if (crane) {
+    const bay = compact ? 18 : 25;             // one X of cross-bracing per bay
+    for (let y = towerTop + 2; y + bay <= base + 12.5; y += bay) {
+      towerWeb.push(
+        <line key={`wa${y}`} className="tower-web" x1={px - tw} y1={y}
+              x2={px + tw} y2={y + bay} strokeWidth="1.1" />,
+        <line key={`wb${y}`} className="tower-web" x1={px + tw} y1={y}
+              x2={px - tw} y2={y + bay} strokeWidth="1.1" />,
+        <line key={`wh${y}`} className="tower-web" x1={px - tw} y1={y}
+              x2={px + tw} y2={y} strokeWidth="1.1" />
+      );
+    }
+    /* the building under it — a parapet's breadth of blank wall, then windows */
+    const wStep = compact ? 15 : 17;
+    for (let y = base + 42; y + 10 < P.H - 4; y += wStep) {
+      for (let x = px - bw + 9; x + 8 <= px + bw - 9; x += wStep) {
+        bldgWins.push(
+          <rect key={`bw${x.toFixed(0)}-${y.toFixed(0)}`} className="bldg-win"
+                x={x} y={y} width="8" height="10" rx="1" />
+        );
+      }
+    }
+  }
+
+  /* the jib: the same rod, dressed as lattice steelwork (a flat-top crane,
+     conveniently, has no apex or tie bars to argue with the tilt) */
+  const jib = [];
+  const trolleys = [];
+  if (crane) {
+    const topY = P.ROD_Y - P.ROD_H, botY = P.ROD_Y + P.ROD_H;
+    const x0 = P.X0, x1 = P.X0 + DIVS * P.DIV;
+    const panel = P.DIV / 2;
+    jib.push(
+      <line key="jt" className="jib-chord" x1={x0} y1={topY} x2={x1} y2={topY}
+            strokeWidth={compact ? 2.2 : 2.6} strokeLinecap="round" />,
+      <line key="jb" className="jib-chord" x1={x0} y1={botY} x2={x1} y2={botY}
+            strokeWidth={compact ? 2.2 : 2.6} strokeLinecap="round" />
     );
+    for (let i = 0; i * panel <= DIVS * P.DIV + 0.5; i++) {
+      const x = x0 + i * panel;
+      jib.push(<line key={`jv${i}`} className="jib-web" x1={x} y1={topY} x2={x} y2={botY}
+                     strokeWidth="1" />);
+      if (x + panel <= x1 + 0.5) {
+        jib.push(<line key={`jd${i}`} className="jib-web"
+                       x1={x} y1={i % 2 ? topY : botY}
+                       x2={x + panel} y2={i % 2 ? botY : topY} strokeWidth="1" />);
+      }
+    }
+    /* one trolley per hanging load, riding the bottom chord — drawn inside the
+       rotated group so it stays on the jib however far the beam leans */
+    items.forEach((it) => {
+      if (it.isRod) return;
+      trolleys.push(
+        <rect key={`trl${it.id}`} className="trolley"
+              x={P.X0 + it.x * scale - (compact ? 6 : 8)} y={P.ROD_Y + P.ROD_H - 3}
+              width={compact ? 12 : 16} height={compact ? 6 : 7} rx="1.5" />
+      );
+    });
   }
 
   const totalW = items.reduce((sum, it) => sum + (it.active ? it.force : 0), 0);
@@ -225,7 +315,9 @@ export default function Scene({ state: s, profile: P, angle, unitsPerPx, dispatc
     <svg ref={svgRef} id="scene" className={P.name === 'compact' ? 'compact' : undefined}
          viewBox={`0 0 ${P.W} ${P.H}`} style={{ '--u': unitsPerPx }}
          role="img"
-         aria-label="A rod resting on a triangular fulcrum with masses hanging from it"
+         aria-label={crane
+           ? 'A tower crane: a lattice jib balanced on a tower, with loads hanging from trolleys'
+           : 'A rod resting on a triangular fulcrum with masses hanging from it'}
          onPointerMove={onMove} onPointerUp={endDrag} onPointerCancel={endDrag}>
       <defs>
         <linearGradient id="rodGrad" x1="0" y1="0" x2="0" y2="1">
@@ -240,7 +332,7 @@ export default function Scene({ state: s, profile: P, angle, unitsPerPx, dispatc
           <stop offset="100%" stopColor="#233c69" />
         </linearGradient>
         <pattern id="grid" patternUnits="userSpaceOnUse"
-                 x={P.X0} y={P.ROD_Y - 2 * cell} width={cell} height={cell}>
+                 x={px} y={P.ROD_Y - 2 * cell} width={cell} height={cell}>
           <path className="grid-minor" d={minorD} fill="none" />
           <path className="grid-major" d={`M0 0V${cell}M0 0H${cell}`} fill="none" />
         </pattern>
@@ -251,39 +343,71 @@ export default function Scene({ state: s, profile: P, angle, unitsPerPx, dispatc
 
       <rect x="0" y="0" width="100%" height="100%" fill="url(#grid)" />
 
-      {/* the compact drawing is only ~400 px wide, so the long caption would be
-          cut off at both ends — say the same thing in fewer words */}
-      <text className="scene-caption" x={P.W / 2} y={P.capY} textAnchor="middle">
-        {P.name === 'compact'
-          ? `Rod length ${RL(s)} ${U(s).len} — measured from the pivot`
-          : `Rod length ${RL(s)} ${U(s).len} — every distance that counts is measured from the pivot.`}
-      </text>
+      {/* faint neighbours on the skyline, so the crane reads as up on a roof */}
+      {crane && (
+        <g aria-hidden="true">
+          <rect className="skyline" x={P.W * 0.06} y={base + 52} width={P.W * 0.1} height={P.H} />
+          <rect className="skyline" x={P.W * 0.19} y={base + 84} width={P.W * 0.07} height={P.H} />
+          <rect className="skyline" x={P.W * 0.82} y={base + 66} width={P.W * 0.12} height={P.H} />
+        </g>
+      )}
 
-      {/* the fulcrum: wedge, plate, bench, pin */}
+      {/* the fulcrum: a wedge on its bench, or a crane tower on a rooftop */}
       <g className={`fulcrum-grp${editable ? '' : ' locked'}`} tabIndex={0} role="slider"
-         aria-label="Fulcrum position" aria-valuenow={Number(s.fulcrum.toFixed(dp))}
+         aria-label={crane
+           ? 'Tower position along the jib, from its left-hand end'
+           : 'Fulcrum position along the rod, from its left-hand end'}
+         aria-valuenow={Number(s.fulcrum.toFixed(dp))}
          aria-valuemin={0} aria-valuemax={RL(s)}
          onPointerDown={grabFulcrum} onKeyDown={(e) => nudge(e, null)}>
-        <polygon className="fwedge" filter="url(#softShadow)"
-                 points={`${px},${P.ROD_Y + P.ROD_H - 1} ${px - half2},${base} ${px + half2},${base}`} />
-        <rect className="fplate" x={px - half2 * 1.7} y={base} width={half2 * 3.4} height="10" rx="2" />
-        {/* a short bench under the stand, so far-out masses never cross a ground line */}
-        <line className="ground-line" x1={px - bw} y1={base + 10} x2={px + bw} y2={base + 10}
-              strokeWidth="1.5" opacity="0.45" />
-        {hatches}
-        <circle className="fpin" cx={px} cy={P.ROD_Y} r={P.name === 'compact' ? 3.5 : 4.5}
+        {crane ? (
+          <>
+            {/* the building the crane stands on, windows and all */}
+            <rect className="bldg" x={px - bw} y={base + 10} width={bw * 2}
+                  height={P.H - base - 10} strokeWidth="1.2" />
+            <line className="ground-line" x1={px - bw} y1={base + 10} x2={px + bw} y2={base + 10}
+                  strokeWidth="1.5" opacity="0.8" />
+            {bldgWins}
+            {/* the lattice tower, its base, slewing ring and the driver's cab */}
+            <line className="tower-chord" x1={px - tw} y1={towerTop} x2={px - tw} y2={base + 12}
+                  strokeWidth="2.4" />
+            <line className="tower-chord" x1={px + tw} y1={towerTop} x2={px + tw} y2={base + 12}
+                  strokeWidth="2.4" />
+            {towerWeb}
+            <rect className="fplate" x={px - tw - 6} y={base + 5} width={(tw + 6) * 2} height="7" rx="2" />
+            <rect className="slew" x={px - tw - 5} y={towerTop - 5} width={(tw + 5) * 2} height="5" rx="1.5" />
+            <rect className="cab" x={px + tw + 1} y={towerTop + 2} width={compact ? 12 : 16}
+                  height={compact ? 11 : 14} rx="2" filter="url(#softShadow)" />
+            <rect className="cab-glass" x={px + tw + 3} y={towerTop + 4} width={compact ? 7 : 10}
+                  height={compact ? 5 : 7} rx="1" />
+          </>
+        ) : (
+          <>
+            <polygon className="fwedge" filter="url(#softShadow)"
+                     points={`${px},${P.ROD_Y + P.ROD_H - 1} ${px - half2},${base} ${px + half2},${base}`} />
+            <rect className="fplate" x={px - half2 * 1.7} y={base} width={half2 * 3.4} height="10" rx="2" />
+            {/* a short bench under the stand, so far-out masses never cross a ground line */}
+            <line className="ground-line" x1={px - bw} y1={base + 10} x2={px + bw} y2={base + 10}
+                  strokeWidth="1.5" opacity="0.45" />
+            {hatches}
+          </>
+        )}
+        <circle className="fpin" cx={px} cy={P.ROD_Y} r={compact ? 3.5 : 4.5}
                 strokeWidth="2" />
         <text className="pivot-label" x={px} y={base + 32} textAnchor="middle">
-          PIVOT {s.fulcrum.toFixed(dp)} {U(s).len}
+          {crane ? 'TOWER' : 'PIVOT'} · 0 {U(s).len}
         </text>
       </g>
 
       {/* the rod: drawn level, then rotated about the pivot */}
       <g transform={`rotate(${angle.toFixed(3)} ${px} ${P.ROD_Y})`}>
-        <rect className="rod-face" x={P.X0} y={P.ROD_Y - P.ROD_H}
-              width={DIVS * P.DIV} height={P.ROD_H * 2} rx="3" strokeWidth="1"
-              filter="url(#softShadow)" />
+        {crane ? jib : (
+          <rect className="rod-face" x={P.X0} y={P.ROD_Y - P.ROD_H}
+                width={DIVS * P.DIV} height={P.ROD_H * 2} rx="3" strokeWidth="1"
+                filter="url(#softShadow)" />
+        )}
         {ticks}
+        {trolleys}
       </g>
 
       {/* distance markers, drawn parallel to the tilted rod */}
@@ -328,6 +452,18 @@ export default function Scene({ state: s, profile: P, angle, unitsPerPx, dispatc
         ? <RodSegment key={it.id} s={s} P={P} it={it} rad={rad} />
         : <HangingMass key={it.id} s={s} P={P} it={it} rad={rad}
                        onGrab={grabMass} onNudge={nudge} />))}
+
+      {/* drawn last, and haloed in the paper colour, so neither a far-out mass
+          nor the crane's building can stand in front of it; the compact drawing
+          is only ~400 px wide, so it says the same thing in fewer words */}
+      <text className="scene-caption" x={P.W / 2} y={P.capY} textAnchor="middle">
+        {compact
+          ? `${crane ? 'Jib' : 'Rod'} length ${RL(s)} ${U(s).len} — marked 0 at the ${crane ? 'tower' : 'pivot'}`
+          : crane
+            ? `Jib length ${RL(s)} ${U(s).len} — marked 0 at the tower, so a load's mark is its working radius.`
+            : `Rod length ${RL(s)} ${U(s).len} — the rod is marked 0 at the pivot, so every mark is ` +
+              'already a distance from it.'}
+      </text>
     </svg>
   );
 }

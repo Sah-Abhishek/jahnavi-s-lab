@@ -347,7 +347,7 @@ export function readState() {
     built.attempts = num(d.score.attempts, 0, 1e6, 0);
     if (built.score > built.attempts) built.score = built.attempts;
   }
-  built.tab = ['explore', 'challenge', 'learn'].indexOf(d.tab) >= 0 ? d.tab : 'explore';
+  built.tab = ['explore', 'challenge', 'learn', 'world'].indexOf(d.tab) >= 0 ? d.tab : 'explore';
   /* a challenge is never restored — it belongs to the sitting it was set in */
   if (built.tab === 'challenge') built.tab = 'explore';
   return built;

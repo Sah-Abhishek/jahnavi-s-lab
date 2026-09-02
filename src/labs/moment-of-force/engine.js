@@ -119,6 +119,29 @@ export const snapPos = (s, v) => {
   return Math.round(v / st) * st;
 };
 
+/* ---------- positions, as the rod is marked ----------
+   The rod carries a scale whose zero is the pivot: negative to the left of it,
+   positive to the right. Only the drawing and the numbers change — a mass is
+   still stored as its position along the rod, so moving the pivot re-labels
+   every mass without moving any of them. */
+export const relOf = (s, x) => x - s.fulcrum;
+export const absOf = (s, rel) => tidy(s.fulcrum + rel);
+/** The marks lie on the pivot, so a dragged mass must snap from there. */
+export const snapOnRod = (s, x) => absOf(s, snapPos(s, relOf(s, x)));
+/** "-2.5", written with a real minus sign — the mark the pupil reads on the rod. */
+export function fmtRel(s, rel, dp) {
+  const d = dp === undefined ? posDp(s) : dp;
+  const v = Math.abs(rel) < 5e-12 ? 0 : rel;          // never "-0.0"
+  return (v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(d);
+}
+/** The same position said out loud, for a screen reader. */
+export function sayRel(s, rel) {
+  const u = U(s);
+  if (Math.abs(rel) < 5e-12) return 'on the pivot';
+  return `${Math.abs(rel).toFixed(posDp(s))} ${u.lenWord} ` +
+         `${rel < 0 ? 'left' : 'right'} of the pivot`;
+}
+
 /* ---------- scene geometry ---------- */
 /** Drawing units per unit of length. */
 export const ppm = (s, P) => (P.DIV * DIVS) / s.rodLength;
@@ -280,4 +303,8 @@ export const PRESETS = {
   offcentre: { label: 'Off-centre pivot',              f: 0.3, list: [[4, -0.2], [2, 0.3]] },
   crowbar:   { label: 'Crowbar: small force, big load', f: 0.2, list: [[8, -0.1], [1, 0.7]] },
   three:     { label: 'Three masses puzzle',           f: 0.5, list: [[2, -0.4], [3, 0.2], [1, 0.4]] },
+  /* the proportions of a real tower crane: a short counter-jib carrying a heavy
+     counterweight close in, a long jib carrying a light load far out —
+     20 x 0.2L = 8 x 0.5L, so it balances at any rod length */
+  crane:     { label: 'Tower crane: counterweight and load', f: 0.25, list: [[20, -0.2], [8, 0.5]] },
 };

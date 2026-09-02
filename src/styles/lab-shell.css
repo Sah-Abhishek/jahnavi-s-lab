@@ -52,7 +52,11 @@
 /* --u is user-units-per-CSS-pixel, measured from the scene's width, so every
    label lands at a real, readable pixel size on any screen. */
 .arrow-label{font-family:var(--f-mono);font-size:calc(var(--u,1) * 11px)}
-.scene-caption{fill:var(--ink-faint);font-family:var(--f-mono);font-size:calc(var(--u,1) * 10.5px)}
+.scene-caption{
+  fill:var(--ink-faint);font-family:var(--f-mono);font-size:calc(var(--u,1) * 10.5px);
+  /* a halo of the paper colour, so the caption survives scenery behind it */
+  paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;
+}
 .ground-line,.ground-hatch{stroke:var(--ink-faint)}
 
 .hint{
@@ -142,9 +146,11 @@ td.obj{
 
 /* ============================ tabs ============================ */
 .tabs{
-  display:grid;grid-template-columns:repeat(3,1fr);
+  display:grid;grid-auto-flow:column;grid-auto-columns:1fr;
   border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--surface);
 }
+/* a fourth tab has to share the same rail, so the type gives up a little air */
+.tabs:has(> :nth-child(4)) .tab{font-size:11px;letter-spacing:.05em;padding:11px 2px}
 .tab{
   font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
   padding:11px 4px;cursor:pointer;border:none;border-right:1px solid var(--rule);

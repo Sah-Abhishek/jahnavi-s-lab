@@ -25,6 +25,43 @@
 .rod-face{fill:url(#rodGrad);stroke:var(--rod-edge)}
 .tick{stroke:var(--rod-edge)}
 .tick-label{fill:var(--ink-faint);font-family:var(--f-mono);font-size:calc(var(--u,1) * 11px)}
+/* the pivot's own mark is the rod's zero — coloured like the fulcrum it sits on */
+.tick.zero{stroke:var(--draft)}
+.tick-label.zero{fill:var(--draft);font-weight:700}
+
+/* ---- the crane skin: painted steel, glass and concrete ----
+   Its palette follows the tokens' pattern: light on the plain selector, dark
+   twice — once for the system preference, once for the explicit toggle. */
+.lab-layout{
+  --crane:#c0790f;          /* the yellow every site crane is painted */
+  --crane-deep:#8f5a0b;
+  --cab-glass:#bdd7f0;
+  --bldg:#e9edf2;
+  --bldg-edge:#c9d4df;
+  --bldg-win:#b3c3d4;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .lab-layout{
+    --crane:#e0a339; --crane-deep:#b47e21; --cab-glass:#9dc2ea;
+    --bldg:#1a232d; --bldg-edge:#2c3947; --bldg-win:#3a4e63;
+  }
+}
+:root[data-theme="dark"] .lab-layout{
+  --crane:#e0a339; --crane-deep:#b47e21; --cab-glass:#9dc2ea;
+  --bldg:#1a232d; --bldg-edge:#2c3947; --bldg-win:#3a4e63;
+}
+
+.jib-chord{stroke:var(--crane)}
+.jib-web{stroke:var(--crane);opacity:.7}
+.trolley{fill:var(--crane-deep)}
+.tower-chord{stroke:var(--crane)}
+.tower-web{stroke:var(--crane);opacity:.65}
+.slew{fill:var(--crane-deep)}
+.cab{fill:var(--crane-deep)}
+.cab-glass{fill:var(--cab-glass)}
+.skyline{fill:var(--bldg);opacity:.6}
+.bldg{fill:var(--bldg);stroke:var(--bldg-edge)}
+.bldg-win{fill:var(--bldg-win);opacity:.85}
 
 /* the fulcrum */
 /* the gradient the tokens define, actually applied — the wedge is not flat black */
@@ -94,6 +131,22 @@ td.moment{font-weight:600}
 /* the two columns the whole lab is about */
 .sum.acw{--tint:var(--acw);--tint-wash:var(--acw-wash)}
 .sum.cw{--tint:var(--cw);--tint-wash:var(--cw-wash)}
+
+/* ==================== the real-world story ==================== */
+.story-lead{margin:0 0 14px;font-size:14.5px;color:var(--ink-soft);max-width:60ch}
+.story-count{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--crane);display:block;margin-bottom:5px;
+}
+.story-step h3{font-size:16px;margin:0 0 6px}
+.story-step p{margin:0 0 9px}
+.story-step p:last-child{margin-bottom:0}
+.story-step .given{margin-bottom:11px}
+.story-step ul{margin:0 0 9px;padding-left:20px;font-size:14px;color:var(--ink-soft)}
+.story-step li{margin-bottom:6px}
+
+/* the qualifier a row-head sometimes needs: "from the left-hand end" */
+.row-head .head-note{font-size:11.5px;color:var(--ink-faint);text-transform:none;letter-spacing:0}
 
 /* ========================= the mass list ========================= */
 .mass-list{display:flex;flex-direction:column;gap:9px}

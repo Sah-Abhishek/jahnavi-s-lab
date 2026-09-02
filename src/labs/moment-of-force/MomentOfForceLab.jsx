@@ -14,6 +14,7 @@ import CalcTable, { StageHead } from './CalcTable';
 import ExplorePanel from './ExplorePanel';
 import ChallengePanel from './ChallengePanel';
 import LearnPanel from './LearnPanel';
+import CranePanel from './CranePanel';
 import { reducer, createInitialState, writeState } from './labState';
 import { PROFILES, beam, maxTilt, clamp, DEG, DAMPING, SPEED } from './engine';
 import './lab.css';
@@ -21,6 +22,7 @@ import './lab.css';
 const TABS = [
   { id: 'explore', name: 'Explore' },
   { id: 'challenge', name: 'Challenge' },
+  { id: 'world', name: 'Real world' },
   { id: 'learn', name: 'Learn' },
 ];
 
@@ -156,6 +158,7 @@ export default function MomentOfForceLab() {
         </div>
         {state.tab === 'explore' && <ExplorePanel state={state} dispatch={dispatch} />}
         {state.tab === 'challenge' && <ChallengePanel state={state} dispatch={dispatch} />}
+        {state.tab === 'world' && <CranePanel state={state} dispatch={dispatch} />}
         {state.tab === 'learn' && <LearnPanel state={state} />}
       </aside>
     </div>

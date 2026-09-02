@@ -3,6 +3,7 @@
 import {
   PROFILES, getItems, getTotals, beam, maxTilt, clamp,
   DEG, DAMPING, SPEED, U, niceStep, snapStep, fmt,
+  relOf, absOf, snapOnRod, fmtRel, sayRel,
 } from '../src/labs/moment-of-force/engine.js';
 import {
   reducer, initialState, createInitialState, writeState, readState,
@@ -104,6 +105,24 @@ ok('every moment shrinks to a tenth', near(getTotals(getItems(s)).cw, 8.82, 1e-9
 ok('but the rod is still balanced', getTotals(getItems(s)).balanced);
 s = reducer(s, { type: 'rodLength', value: 10 });
 
+console.log('\n— the rod is marked from the pivot —');
+s = reducer(s, { type: 'reset' });                      /* 2 kg at 2 m, 3 kg at 8 m, pivot 5 */
+ok('a mass left of the pivot reads negative', near(relOf(s, 2), -3), relOf(s, 2));
+ok('a mass right of it reads positive', near(relOf(s, 8), 3), relOf(s, 8));
+ok('the pivot itself reads zero', near(relOf(s, s.fulcrum), 0));
+ok('the rod runs from -5 to 5', near(relOf(s, 0), -5) && near(relOf(s, s.rodLength), 5));
+ok('a mark is written with a real minus sign', fmtRel(s, -3) === '\u22123.00', fmtRel(s, -3));
+ok('and zero never comes out as "-0"', fmtRel(s, -1e-15) === '0.00', fmtRel(s, -1e-15));
+ok('a screen reader hears the side, not the sign',
+   sayRel(s, -3) === '3.00 metres left of the pivot', sayRel(s, -3));
+ok('a mark converts back to a position on the rod', near(absOf(s, -3), 2), absOf(s, -3));
+/* the marks hang off the pivot, so a dragged mass must land on one of THEM */
+s = reducer(s, { type: 'fulcrum', value: 5.1 });
+ok('dragging snaps to the marks the rod carries, not to the rod\u2019s left end',
+   near(relOf(s, snapOnRod(s, 7)), 2), relOf(s, snapOnRod(s, 7)));
+ok('moving the pivot re-marks the rod without moving a mass',
+   near(relOf(s, 2), -3.1) && s.masses[0].x === 2, relOf(s, 2));
+
 console.log('\n— the rod that weighs something —');
 s = reducer(s, { type: 'toggle', key: 'useRodWeight', value: true });
 s = reducer(s, { type: 'rodMass', value: 100 });
@@ -183,6 +202,26 @@ ok('the challenge replaces what is on the rod',
 c = reducer(c, { type: 'leaveChallenge' });
 ok('and leaving puts the experiment back exactly',
    JSON.stringify(c.masses.map((m) => [m.m, m.x])) === mine);
+
+console.log('\n— the tower crane —');
+s = reducer(initialState, { type: 'preset', name: 'crane' });
+t = getTotals(getItems(s));
+ok('the crane preset balances at any length: 20 x 0.2L = 8 x 0.5L', t.balanced,
+   JSON.stringify(t));
+ok('counterweight heavy and close, load light and far',
+   s.masses[0].m === 20 && relOf(s, s.masses[0].x) === -2 &&
+   s.masses[1].m === 8 && relOf(s, s.masses[1].x) === 5,
+   JSON.stringify(s.masses.map((m) => [m.m, relOf(s, m.x)])));
+const empty = reducer(s, { type: 'massEnabled', id: s.masses[1].id, value: false });
+ok('with an empty hook the counterweight tips it backwards',
+   getTotals(getItems(empty)).net < 0, getTotals(getItems(empty)).net);
+const far = reducer(s, { type: 'massPos', id: s.masses[1].id, value: 0.95 * s.rodLength });
+ok('the same load further out tips it forwards',
+   getTotals(getItems(far)).net > 0, getTotals(getItems(far)).net);
+/* the crane costume itself is derived from the active tab, never stored —
+   only the Real world panel wears it, so there is nothing here to persist */
+ok('opening the Real world tab changes no physics',
+   getTotals(getItems(reducer(s, { type: 'tab', value: 'world' }))).balanced);
 
 console.log('\n— what the browser remembers —');
 s = reducer(initialState, { type: 'preset', name: 'three' });

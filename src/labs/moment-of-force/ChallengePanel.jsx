@@ -7,7 +7,7 @@
    ============================================================ */
 import { useEffect, useState } from 'react';
 import { newTask } from './challenges';
-import { U, getItems, getTotals, posDp, fmt } from './engine';
+import { U, getItems, getTotals, posDp, fmtRel, fmt } from './engine';
 
 const NAMES = {
   cw: 'tipped to the right (clockwise)',
@@ -60,8 +60,8 @@ export default function ChallengePanel({ state: s, dispatch }) {
     if (t.balanced) {
       score(true);
       setFeedback({ cls: 'good', word: 'Balanced', body: (
-        <>{task.target.m} {u.mass} at {mo.x.toFixed(dp)} {u.len} is exactly{' '}
-          {task.target.d.toFixed(dp)} {u.len} from the pivot.{workingOut(task)}</>
+        <>{task.target.m} {u.mass} at the {fmtRel(s, mo.x - task.f, dp)} {u.len} mark is
+          exactly {task.target.d.toFixed(dp)} {u.len} from the pivot.{workingOut(task)}</>
       ) });
     } else {
       score(false);
@@ -79,8 +79,9 @@ export default function ChallengePanel({ state: s, dispatch }) {
     dispatch({ type: 'revealTarget', x: task.target.x });
     if (!answered) { setAnswered(true); score(false); }
     setFeedback({ cls: 'info', word: 'Answer', body: (
-      <>The {task.target.m} {u.mass} mass belongs at <strong>{task.target.x.toFixed(dp)} {u.len}</strong> —
-        that is {task.target.d.toFixed(dp)} {u.len} from the pivot.{workingOut(task)}</>
+      <>The {task.target.m} {u.mass} mass belongs at
+        the <strong>{fmtRel(s, task.target.x - task.f, dp)} {u.len}</strong> mark — that
+        is {task.target.d.toFixed(dp)} {u.len} from the pivot.{workingOut(task)}</>
     ) });
   };
 
@@ -106,9 +107,11 @@ export default function ChallengePanel({ state: s, dispatch }) {
 
   const given = task && (
     <span className="given">
-      Pivot at {task.f.toFixed(dp)} {u.len}<br />
+      Pivot at the 0 mark<br />
       {task.fixed.map((k, i) => (
-        <span key={i}>{k.m} {u.mass} at {k.x.toFixed(dp)} {u.len}<br /></span>
+        <span key={i}>
+          {k.m} {u.mass} at {fmtRel(s, k.x - task.f, dp)} {u.len}<br />
+        </span>
       ))}
       g = {s.g} {u.field}
     </span>
