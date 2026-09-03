@@ -17,10 +17,10 @@ import {
   parseLine3, lineVectorText, lineSymmetricText,
   PRESETS_2D, PRESETS_3D, num,
 } from './engine';
-import { lineOf, line3Of } from './labState';
+import { lineOf, line3Of, LIMIT } from './labState';
 
 /* ---------- one vertex, as numbers ---------- */
-function VertexBlock({ label, p, three, index, dispatch, range, disabled }) {
+function VertexBlock({ label, p, three, index, dispatch, disabled }) {
   const set = (key, value) => dispatch({ type: 'point', index, value: { ...p, [key]: value } });
   const axes = three ? ['x', 'y', 'z'] : ['x', 'y'];
   return (
@@ -36,7 +36,7 @@ function VertexBlock({ label, p, three, index, dispatch, range, disabled }) {
         {axes.map((k) => (
           <label key={k} className="co-cell">
             <span className="co-name">{k}</span>
-            <Stepper mini value={p[k]} min={-range} max={range} step={1} unit=""
+            <Stepper mini value={p[k]} min={-LIMIT} max={LIMIT} step={1} unit=""
                      disabled={disabled}
                      less={`Lower ${k}`} more={`Raise ${k}`}
                      onChange={(v) => set(k, v)} />
@@ -117,7 +117,7 @@ function ExplorePanel({ state: s, dispatch }) {
         </div>
         {pts.map((p, i) => (
           <VertexBlock key={labels[i]} label={labels[i]} p={p} three={three} index={i}
-                       dispatch={dispatch} range={s.range} disabled={!editable} />
+                       dispatch={dispatch} disabled={!editable} />
         ))}
       </section>
 
@@ -194,7 +194,7 @@ function ExplorePanel({ state: s, dispatch }) {
               </div>
               <label className="co-cell wide">
                 <span className="co-name">d</span>
-                <Stepper mini value={s.plane.d} min={-40} max={40} step={1} unit=""
+                <Stepper mini value={s.plane.d} min={-LIMIT} max={LIMIT} step={1} unit=""
                          disabled={!editable}
                          less="Lower d" more="Raise d"
                          onChange={(v) => dispatch({ type: 'planeCoef', key: 'd', value: v })} />
@@ -232,7 +232,7 @@ function ExplorePanel({ state: s, dispatch }) {
                     {['x', 'y', 'z'].map((k) => (
                       <label key={k} className="co-cell">
                         <span className="co-name">{which}·{k}</span>
-                        <Stepper mini value={p[k]} min={-s.range} max={s.range} step={1} unit=""
+                        <Stepper mini value={p[k]} min={-LIMIT} max={LIMIT} step={1} unit=""
                                  disabled={!editable}
                                  less={`Lower ${k}`} more={`Raise ${k}`}
                                  onChange={(v) => dispatch({

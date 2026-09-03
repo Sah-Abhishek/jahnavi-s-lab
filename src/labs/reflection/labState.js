@@ -22,11 +22,11 @@ import {
 
 /* Nothing may be placed beyond this, in any direction. The view is free to
    wander anywhere; the maths stays somewhere a pupil can still read it. */
-export const LIMIT = 30;
+export const LIMIT = 500;
 
 /* The reach of the graph: the world half-extent of its shorter side. Eight
    orders of magnitude between the ends, which is as good as unbounded for a
-   lab whose numbers live between −30 and 30. */
+   lab whose numbers live between −500 and 500. */
 export const RANGE_MIN = 1e-3;
 export const RANGE_MAX = 1e5;
 export const DEFAULT_RANGE = 8;
